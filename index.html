@@ -1,0 +1,48 @@
+<!doctype html>
+<html lang="de">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>TAE-Workshop</title>
+<style>
+  body { font-family: system-ui, sans-serif; margin: 2rem 1rem; background: #fff; color: #222; }
+  h1 { font-size: 1.8rem; }
+  .fehler { color: #b00020; }
+</style>
+</head>
+<body>
+<h1 id="ausgabe">Lade Daten …</h1>
+
+<script>
+  var DATEI = 'daten/mengenliste/Mengenliste_Beispielprojekt.xlsx';
+  var SHEETJS = 'https://cdnjs.cloudflare.com/ajax/libs/xlsx/0.18.5/xlsx.full.min.js';
+  var ausgabe = document.getElementById('ausgabe');
+
+  function zeigeFehler(text) {
+    ausgabe.textContent = 'Fehler: ' + text;
+    ausgabe.className = 'fehler';
+  }
+
+  function ladeExcel() {
+    fetch(DATEI)
+      .then(function (antwort) {
+        if (!antwort.ok) throw new Error(DATEI + ' nicht gefunden (' + antwort.status + ')');
+        return antwort.arrayBuffer();
+      })
+      .then(function (puffer) {
+        var mappe = XLSX.read(puffer, { type: 'array' });
+        var blatt = mappe.Sheets[mappe.SheetNames[0]];
+        var zeilen = XLSX.utils.sheet_to_json(blatt);
+        ausgabe.textContent = 'Hallo Esslingen: ' + zeilen.length + ' Zeilen';
+      })
+      .catch(function (fehler) { zeigeFehler(fehler.message); });
+  }
+
+  var skript = document.createElement('script');
+  skript.src = SHEETJS;
+  skript.onload = ladeExcel;
+  skript.onerror = function () { zeigeFehler('SheetJS konnte nicht geladen werden'); };
+  document.head.appendChild(skript);
+</script>
+</body>
+</html>
