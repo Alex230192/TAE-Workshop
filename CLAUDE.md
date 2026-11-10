@@ -50,6 +50,9 @@ Etappen, jeweils ein eigener Schritt mit Prüfung:
 - Werte aus der Excel-Datei unverändert übernehmen, nicht runden beim Rechnen,
   erst bei der Anzeige (Längen 2 Nachkommastellen).
 - Nichts schätzen oder erfinden. Fehlt ein Wert, wird er als fehlend angezeigt.
+- Jeder Wert hat eine Quelle, die in der App sichtbar ist (Datei und Blatt bzw. Spalte).
+- Emissionsfaktoren nie schätzen. Falls die App Emissionen zeigt, kommen die Faktoren
+  nur aus daten/gemeinsam/faktoren_oekobaudat.csv, angezeigt mit ÖKOBAUDAT-UUID und Version.
 - Koordinatensystem wie RFEM: Z zeigt nach unten, negative Z-Werte liegen oben.
   Für die 3D-Ansicht wird Z gespiegelt, damit das Gebäude aufrecht steht.
 
@@ -61,6 +64,9 @@ Jede Randbedingung durchläuft drei Stufen:
 2. KI: unter 0,8 entscheidet die KI-Stufe mit Konfidenz und Begründung.
    Ab 0,7 wird das Ergebnis übernommen.
 3. Mensch: darunter entscheide ich. Die App markiert diese Fälle und lässt mich wählen.
+   Meine Entscheidung gilt mit Konfidenz 1,0 und wird mit Datum gespeichert.
+Die Schwellen 0,8 und 0,7 sind unsere Festlegung und können unter
+„Unsere Entscheidungen“ geändert werden.
 Jedes Element in der App ist anklickbar und zeigt Stufe, Konfidenz, Regel bzw.
 Begründung. Die Regeln stehen in daten/tragwerksmodell/regeln_randbedingungen.csv,
 nicht im Code versteckt.
@@ -89,6 +95,8 @@ Für TAE_betonbau_Export.xlsx (geprüft):
   Randbedingungen nicht gebraucht.
 
 ## Unsere Entscheidungen
+Hier tragen wir während des Bauens nach, was wir festgelegt haben (mit Datum).
+Du schlägst einen Eintrag vor, sobald wir etwas entscheiden, und trägst ihn nach meinem OK ein.
 - Datenquelle ist nur TAE_betonbau_Export.xlsx, nicht die .3dm-Datei.
 - Blatt 1.7 Knotenlager dient als Vergleich für die Lager, nicht als Eingabe.
 - Offen, bitte bestätigen:
