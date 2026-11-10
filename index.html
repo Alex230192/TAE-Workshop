@@ -8,11 +8,13 @@
   :root {
     --bg: #ffffff; --text: #1d1f23; --muted: #5f6670; --line: #d9dde3;
     --panel: #f5f7fa; --accent: #1f5fae; --ok: #1e7a3c; --warn: #a15c00; --err: #b00020;
+    --offen-bg: #fff4e5; --offen-line: #f0b25a;
   }
   @media (prefers-color-scheme: dark) {
     :root {
       --bg: #15171a; --text: #e6e8eb; --muted: #9aa2ad; --line: #2c3036;
       --panel: #1e2125; --accent: #79aef0; --ok: #5cc27e; --warn: #e0a64a; --err: #ff6b7d;
+      --offen-bg: #2b2215; --offen-line: #8a6420;
     }
   }
   * { box-sizing: border-box; }
@@ -21,17 +23,19 @@
   main { max-width: 1100px; margin: 0 auto; }
   h1 { font-size: 1.6rem; margin: 0 0 .25rem; }
   h2 { font-size: 1.2rem; margin: 2rem 0 .5rem; border-bottom: 1px solid var(--line); padding-bottom: .3rem; }
+  h3 { font-size: 1rem; margin: 1.2rem 0 .4rem; }
   .unter { color: var(--muted); margin: 0 0 1rem; }
   .quelle { color: var(--muted); font-size: .85rem; margin: .25rem 0 .75rem; }
-  .kacheln { display: grid; grid-template-columns: repeat(auto-fit, minmax(160px, 1fr)); gap: .75rem; }
+  .kacheln { display: grid; grid-template-columns: repeat(auto-fit, minmax(150px, 1fr)); gap: .75rem; }
   .kachel { background: var(--panel); border: 1px solid var(--line); border-radius: 8px; padding: .75rem 1rem; }
   .kachel .wert { font-size: 1.4rem; font-weight: 600; font-variant-numeric: tabular-nums; }
   .kachel .name { color: var(--muted); font-size: .85rem; }
   .tabelle { overflow-x: auto; border: 1px solid var(--line); border-radius: 8px; }
   table { border-collapse: collapse; width: 100%; font-size: .9rem; }
-  th, td { padding: .35rem .6rem; border-bottom: 1px solid var(--line); text-align: left; white-space: nowrap; }
+  th, td { padding: .35rem .6rem; border-bottom: 1px solid var(--line); text-align: left; white-space: nowrap; vertical-align: top; }
   th { background: var(--panel); position: sticky; top: 0; font-weight: 600; }
   td.zahl, th.zahl { text-align: right; font-variant-numeric: tabular-nums; }
+  td.text { white-space: normal; min-width: 220px; }
   tr.summe td { font-weight: 600; background: var(--panel); }
   details { margin: .75rem 0; }
   summary { cursor: pointer; font-weight: 600; padding: .3rem 0; }
@@ -39,32 +43,51 @@
   .ok { color: var(--ok); } .warn { color: var(--warn); } .err { color: var(--err); }
   #status { padding: .6rem .9rem; border-radius: 8px; background: var(--panel); border: 1px solid var(--line); }
   ul.pruef { margin: .25rem 0; padding-left: 1.2rem; }
+  .marke { display: inline-block; padding: 0 .45rem; border-radius: 999px; font-size: .8rem; font-weight: 600; color: #fff; }
+  .klein { font-size: .85rem; color: var(--muted); }
+  /* Offen-Kasten */
+  #offen { margin-top: 1rem; border: 1px solid var(--offen-line); background: var(--offen-bg); border-radius: 8px; padding: .7rem 1rem; }
+  #offen h2 { margin: 0 0 .5rem; border: 0; padding: 0; }
+  .offen-gruppe { border-top: 1px solid var(--offen-line); padding: .6rem 0; }
+  .offen-gruppe:first-of-type { border-top: 0; }
+  .zeile { display: flex; flex-wrap: wrap; gap: .5rem; align-items: center; margin-top: .4rem; }
+  select { font: inherit; font-size: .85rem; padding: .25rem .4rem; border-radius: 6px; border: 1px solid var(--line); background: var(--bg); color: var(--text); }
+  /* Schwellen */
+  .schwellen { display: grid; grid-template-columns: repeat(auto-fit, minmax(240px, 1fr)); gap: .75rem; }
+  .schwellen label { display: block; background: var(--panel); border: 1px solid var(--line); border-radius: 8px; padding: .6rem .8rem; }
+  .schwellen input[type=range] { width: 100%; }
   /* 3D-Ansicht */
-  .ansicht { display: grid; grid-template-columns: 1fr 280px; gap: .75rem; }
+  .ansicht { display: grid; grid-template-columns: 1fr 300px; gap: .75rem; }
   @media (max-width: 760px) { .ansicht { grid-template-columns: 1fr; } }
   #viewer { position: relative; height: 520px; border: 1px solid var(--line); border-radius: 8px;
             overflow: hidden; background: var(--panel); touch-action: none; }
   #viewer canvas { display: block; }
-  .knoepfe { display: flex; flex-wrap: wrap; gap: .4rem; margin: .5rem 0; }
+  .knoepfe { display: flex; flex-wrap: wrap; gap: .4rem; margin: .5rem 0; align-items: center; }
   button { font: inherit; font-size: .85rem; padding: .3rem .7rem; border-radius: 6px; cursor: pointer;
            border: 1px solid var(--line); background: var(--panel); color: var(--text); }
   button:hover { border-color: var(--accent); }
+  button.haupt { background: var(--accent); color: #fff; border-color: var(--accent); }
   .seite { display: flex; flex-direction: column; gap: .75rem; }
   .box { background: var(--panel); border: 1px solid var(--line); border-radius: 8px; padding: .6rem .8rem; font-size: .9rem; }
   .box h3 { font-size: .95rem; margin: 0 0 .4rem; }
-  .legende label { display: flex; align-items: center; gap: .45rem; padding: .1rem 0; cursor: pointer; }
+  .legende label, .legende div { display: flex; align-items: center; gap: .45rem; padding: .1rem 0; }
+  .legende label { cursor: pointer; }
   .farbe { width: 14px; height: 14px; border-radius: 3px; flex: none; }
   .details table { font-size: .85rem; }
   .details td { padding: .2rem .3rem; white-space: normal; }
-  .details td:first-child { color: var(--muted); }
+  .details td:first-child { color: var(--muted); width: 38%; }
+  .details .stufe { border-top: 1px solid var(--line); margin-top: .5rem; padding-top: .4rem; }
+  .details .stufe h4 { margin: 0 0 .2rem; font-size: .9rem; }
+  .details .rechnung { font-family: ui-monospace, Consolas, monospace; font-size: .78rem; white-space: pre-wrap; }
   .achsen span { font-weight: 600; }
 </style>
 </head>
 <body>
 <main>
   <h1>Randbedingungen Betonbau</h1>
-  <p class="unter">Etappe 2: 3D-Darstellung · Datei <code>daten/tragwerksmodell/TAE_betonbau_Export.xlsx</code></p>
+  <p class="unter">Etappe 3: Stabfunktion über die Entscheidungsleiter · Datei <code>daten/tragwerksmodell/TAE_betonbau_Export.xlsx</code></p>
   <div id="status">Lade Daten …</div>
+  <section id="offen" hidden></section>
 
   <h2>3D-Modell</h2>
   <div class="knoepfe">
@@ -73,11 +96,18 @@
     <button data-ansicht="seite">Seite (Y–Z)</button>
     <button data-ansicht="oben">Oben (X–Y)</button>
     <button id="knotenSchalter">Knoten ausblenden</button>
+    <label class="klein">Farbe nach
+      <select id="farbmodus">
+        <option value="funktion">Funktion</option>
+        <option value="stufe">Entscheidungsstufe</option>
+        <option value="qs">Querschnitt</option>
+      </select>
+    </label>
   </div>
   <div class="ansicht">
     <div id="viewer"></div>
     <div class="seite">
-      <div class="box legende" id="legende"><h3>Querschnitte</h3></div>
+      <div class="box legende" id="legende"></div>
       <div class="box details" id="details"><h3>Details</h3><p class="quelle">Stab oder Knoten anklicken.</p></div>
       <div class="box achsen">
         <h3>Bedienung</h3>
@@ -88,20 +118,34 @@
     </div>
   </div>
 
+  <section id="leiter"></section>
   <div id="inhalt"></div>
 </main>
 
 <script>
   var DATEI = 'daten/tragwerksmodell/TAE_betonbau_Export.xlsx';
   var DATEINAME = 'TAE_betonbau_Export.xlsx';
+  var REGELN = 'daten/tragwerksmodell/regeln.csv';
+  var KI_DATEI = 'daten/tragwerksmodell/ki_funktion.csv';
+  var MENSCH_DATEI = 'daten/tragwerksmodell/mensch_funktion.csv';
+  var SPEICHER = 'tae_mensch_funktion';
   var SHEETJS = 'https://cdnjs.cloudflare.com/ajax/libs/xlsx/0.18.5/xlsx.full.min.js';
   var THREE_JS = 'https://cdnjs.cloudflare.com/ajax/libs/three.js/r128/three.min.js';
   var ORBIT_JS = 'https://cdn.jsdelivr.net/npm/three@0.128.0/examples/js/controls/OrbitControls.js';
-  // Farben je Querschnitt (Reihenfolge nach Querschnitts-Nr.)
-  var FARBEN = ['#2f6fdf', '#e07b24', '#2a9d58', '#c03a6b', '#8a5cd1', '#1fa3a3', '#b8a12a', '#6b7280'];
+
+  var FARBEN_QS = ['#2f6fdf', '#e07b24', '#2a9d58', '#c03a6b', '#8a5cd1', '#1fa3a3', '#b8a12a', '#6b7280'];
+  var FUNKTIONEN = ['Stütze', 'Träger', 'Nebenträger', 'Verband'];
+  var FARBEN_FUNKTION = { 'Stütze': '#2f6fdf', 'Träger': '#c03a6b', 'Nebenträger': '#e07b24', 'Verband': '#2a9d58', 'offen': '#9aa0a6' };
+  var STUFEN = ['Algorithmus', 'KI', 'Mensch', 'Offen'];
+  var FARBEN_STUFE = { 'Algorithmus': '#2a9d58', 'KI': '#8a5cd1', 'Mensch': '#e07b24', 'Offen': '#d62f2f' };
 
   var statusEl = document.getElementById('status');
   var inhaltEl = document.getElementById('inhalt');
+
+  // Zustand
+  var modell = null, regeln = [], kiAntworten = {}, mensch = {};
+  var schwelleAlg = 0.8, schwelleKI = 0.8;
+  var ansicht3D = null, auswahlStab = null;
 
   // ---------- Hilfsfunktionen ----------
   function esc(s) {
@@ -112,11 +156,15 @@
     if (v === null || v === undefined || v === '' || isNaN(v)) return '<span class="warn">fehlt</span>';
     return Number(v).toLocaleString('de-DE', { minimumFractionDigits: nk, maximumFractionDigits: nk });
   }
+  function zahlText(v, nk) {
+    return Number(v).toLocaleString('de-DE', { minimumFractionDigits: nk, maximumFractionDigits: nk });
+  }
+  function num(s) { return parseFloat(String(s).replace(',', '.')); }
+  function marke(text, farbe) { return '<span class="marke" style="background:' + farbe + '">' + esc(text) + '</span>'; }
   function quelle(blatt, spalten) {
     return '<p class="quelle">Quelle: ' + esc(DATEINAME) + ', Blatt „' + esc(blatt) + '“' +
       (spalten ? ', ' + esc(spalten) : '') + '</p>';
   }
-  // Knotenliste wie "1,3,5" oder "1-5,8" in Zahlen auflösen
   function knotenListe(text) {
     var liste = [];
     String(text).split(',').forEach(function (teil) {
@@ -127,6 +175,22 @@
       else liste.push(+teil);
     });
     return liste;
+  }
+  // CSV mit Semikolon, erste Zeile Kopf
+  function leseCSV(text) {
+    var zeilen = text.replace(/^﻿/, '').split(/\r?\n/).filter(function (z) { return z.trim() !== ''; });
+    var kopf = zeilen[0].split(';').map(function (k) { return k.trim(); });
+    return zeilen.slice(1).map(function (z) {
+      var teile = z.split(';'), o = {};
+      kopf.forEach(function (k, i) { o[k] = (teile[i] || '').trim(); });
+      return o;
+    });
+  }
+  function holeText(url, optional) {
+    return fetch(url).then(function (r) {
+      if (!r.ok) { if (optional) return null; throw new Error(url + ' nicht gefunden (HTTP ' + r.status + ')'); }
+      return r.text();
+    });
   }
 
   // Blatt einlesen: Zeile 1 Titel, Zeilen 2-3 Kopf (verbundene Zellen auffüllen), Daten ab Zeile 4
@@ -149,23 +213,25 @@
     var daten = roh.slice(3).filter(function (z) {
       return z.some(function (v) { return v !== null && v !== ''; });
     });
-    return { name: name, titel: (roh[0] || [])[0], spalten: spalten, daten: daten,
-             verbunden: (ws['!merges'] || []).length };
+    return { name: name, titel: (roh[0] || [])[0], spalten: spalten, daten: daten };
   }
 
-  function tabelle(kopf, zeilen, zahlSpalten, summenZeile) {
-    zahlSpalten = zahlSpalten || [];
+  function tabelle(kopf, zeilen, zahlSpalten, summenZeile, textSpalten) {
+    zahlSpalten = zahlSpalten || []; textSpalten = textSpalten || [];
+    function cls(i) {
+      return zahlSpalten.indexOf(i) >= 0 ? ' class="zahl"' : (textSpalten.indexOf(i) >= 0 ? ' class="text"' : '');
+    }
     var h = '<div class="tabelle"><table><thead><tr>';
-    kopf.forEach(function (k, i) { h += '<th' + (zahlSpalten.indexOf(i) >= 0 ? ' class="zahl"' : '') + '>' + esc(k) + '</th>'; });
+    kopf.forEach(function (k, i) { h += '<th' + cls(i) + '>' + esc(k) + '</th>'; });
     h += '</tr></thead><tbody>';
     zeilen.forEach(function (z) {
       h += '<tr>';
-      z.forEach(function (v, i) { h += '<td' + (zahlSpalten.indexOf(i) >= 0 ? ' class="zahl"' : '') + '>' + v + '</td>'; });
+      z.forEach(function (v, i) { h += '<td' + cls(i) + '>' + v + '</td>'; });
       h += '</tr>';
     });
     if (summenZeile) {
       h += '<tr class="summe">';
-      summenZeile.forEach(function (v, i) { h += '<td' + (zahlSpalten.indexOf(i) >= 0 ? ' class="zahl"' : '') + '>' + v + '</td>'; });
+      summenZeile.forEach(function (v, i) { h += '<td' + cls(i) + '>' + v + '</td>'; });
       h += '</tr>';
     }
     return h + '</tbody></table></div>';
@@ -181,31 +247,348 @@
       staebe: leseBlatt(mappe, '1.17 Stäbe'),
       lager: leseBlatt(mappe, '1.7 Knotenlager')
     };
-    var m = { blaetter: b, knoten: {}, linien: {}, material: {}, qs: {}, staebe: [], lager: [] };
+    var m = { blaetter: b, knoten: {}, linien: {}, material: {}, qs: {}, staebe: [], lager: [], lagerVon: {}, stabVon: {} };
 
     b.knoten.daten.forEach(function (z) { m.knoten[z[0]] = { nr: z[0], x: z[1], y: z[2], z: z[3] }; });
     b.linien.daten.forEach(function (z) { m.linien[z[0]] = { nr: z[0], knoten: knotenListe(z[1]), text: z[1] }; });
     b.material.daten.forEach(function (z) { m.material[z[0]] = { nr: z[0], name: z[1], wichte: z[2], e: z[3] }; });
-    b.qs.daten.forEach(function (z) { m.qs[z[0]] = { nr: z[0], name: z[1], mat: z[2], a: z[3] }; });
+    b.qs.daten.forEach(function (z) {
+      var mm = String(z[1]).match(/(\d+)\s*\/\s*(\d+)/);
+      m.qs[z[0]] = { nr: z[0], name: z[1], mat: z[2], a: z[3], b: mm ? +mm[1] : NaN, h: mm ? +mm[2] : NaN };
+    });
     b.staebe.daten.forEach(function (z) {
       var linie = m.linien[z[1]];
       var ka = linie ? m.knoten[linie.knoten[0]] : null;
       var ke = linie ? m.knoten[linie.knoten[linie.knoten.length - 1]] : null;
       var lGeo = (ka && ke) ? Math.sqrt(Math.pow(ke.x - ka.x, 2) + Math.pow(ke.y - ka.y, 2) + Math.pow(ke.z - ka.z, 2)) : NaN;
       var qs = m.qs[z[3]];
-      m.staebe.push({
+      var s = {
         nr: z[0], linie: z[1], typ: z[2], qsA: z[3], qsE: z[4], gelA: z[5], gelE: z[6],
         l: z[7], g: z[8], ka: ka, ke: ke, lGeo: lGeo,
         qs: qs, mat: qs ? m.material[qs.mat] : null
-      });
+      };
+      m.staebe.push(s);
+      m.stabVon[s.nr] = s;
     });
     b.lager.daten.forEach(function (z) {
-      m.lager.push({ nr: z[0], text: z[1], knoten: knotenListe(z[1]), frei: z.slice(2, 8) });
+      var l = { nr: z[0], text: z[1], knoten: knotenListe(z[1]), frei: z.slice(2, 8) };
+      m.lager.push(l);
+      l.knoten.forEach(function (n) { m.lagerVon[n] = l; });
     });
+    ergaenzeGeometrie(m);
     return m;
   }
 
-  // ---------- Anzeige ----------
+  // Richtung, Neigung, Lage und Anschlüsse je Stab
+  function ergaenzeGeometrie(m) {
+    var xs = [], ys = [];
+    Object.keys(m.knoten).forEach(function (k) { xs.push(m.knoten[k].x); ys.push(m.knoten[k].y); });
+    var xmin = Math.min.apply(null, xs), xmax = Math.max.apply(null, xs);
+    var ymin = Math.min.apply(null, ys), ymax = Math.max.apply(null, ys);
+    var anKnoten = {};
+    m.staebe.forEach(function (s) {
+      if (!s.ka || !s.ke) return;
+      var dx = s.ke.x - s.ka.x, dy = s.ke.y - s.ka.y, dz = s.ke.z - s.ka.z;
+      var lh = Math.sqrt(dx * dx + dy * dy);
+      s.neigung = Math.atan2(Math.abs(dz), lh) * 180 / Math.PI;   // 0° waagerecht, 90° senkrecht
+      var eps = 1e-6;
+      s.richtung = (Math.abs(dx) < eps && Math.abs(dy) < eps) ? 'vertikal'
+        : (Math.abs(dz) < eps && Math.abs(dy) < eps) ? 'X'
+        : (Math.abs(dz) < eps && Math.abs(dx) < eps) ? 'Y' : 'schräg';
+      var rand = (s.ka.x === xmin && s.ke.x === xmin) || (s.ka.x === xmax && s.ke.x === xmax) ||
+                 (s.ka.y === ymin && s.ke.y === ymin) || (s.ka.y === ymax && s.ke.y === ymax);
+      s.lage = rand ? 'Rand' : 'Innen';
+      s.merkmale = { neigung: s.neigung, hoehe: s.qs ? s.qs.h : NaN, laenge: s.l };
+      s.gruppe = (s.richtung === 'vertikal' ? 'senkrecht' : s.richtung === 'schräg' ? 'schräg' : 'waagerecht in ' + s.richtung) +
+        ' · ' + (s.qs ? s.qs.name.replace('Rectangle ', '') + ' (QS ' + s.qs.nr + ')' : 'ohne QS') + ' · ' + s.lage;
+      [s.ka.nr, s.ke.nr].forEach(function (n) { (anKnoten[n] = anKnoten[n] || []).push(s); });
+    });
+    m.anKnoten = anKnoten;
+    // Knoten, die im Feld eines Stabs liegen (nicht an den Enden)
+    m.staebe.forEach(function (s) {
+      s.imFeld = [];
+      if (!s.ka || !s.ke) return;
+      Object.keys(m.knoten).forEach(function (k) {
+        var p = m.knoten[k];
+        if (p.nr === s.ka.nr || p.nr === s.ke.nr) return;
+        var ax = s.ke.x - s.ka.x, ay = s.ke.y - s.ka.y, az = s.ke.z - s.ka.z;
+        var t = ((p.x - s.ka.x) * ax + (p.y - s.ka.y) * ay + (p.z - s.ka.z) * az) / (ax * ax + ay * ay + az * az);
+        if (t <= 0.001 || t >= 0.999) return;
+        var qx = s.ka.x + t * ax - p.x, qy = s.ka.y + t * ay - p.y, qz = s.ka.z + t * az - p.z;
+        if (Math.sqrt(qx * qx + qy * qy + qz * qz) < 0.01) s.imFeld.push(p.nr);
+      });
+    });
+  }
+
+  // ---------- Entscheidungsleiter ----------
+  // Bedingung wie "neigung>=75±15"
+  function leseBedingung(text) {
+    var m = String(text).trim().match(/^(\w+)\s*(>=|<=)\s*([\d.,]+)\s*±\s*([\d.,]+)$/);
+    if (!m) throw new Error('Bedingung nicht lesbar: „' + text + '“ in regeln.csv');
+    return { merkmal: m[1], op: m[2], grenze: num(m[3]), uebergang: num(m[4]), text: String(text).trim() };
+  }
+  var EINHEIT = { neigung: '°', hoehe: 'mm', laenge: 'm' };
+  // Konfidenz: auf der Grenze 0,5, linear bis 1 (Grenze + Übergang drin) bzw. 0 (Übergang draußen)
+  function konfidenz(b, wert) {
+    var abstand = b.op === '>=' ? wert - b.grenze : b.grenze - wert;
+    var roh = 0.5 + abstand / (2 * b.uebergang);
+    var k = Math.max(0, Math.min(1, roh));
+    var formel = b.op === '>='
+      ? '0,5 + (' + zahlText(wert, 1) + ' − ' + zahlText(b.grenze, 1) + ') / ' + zahlText(2 * b.uebergang, 1)
+      : '0,5 + (' + zahlText(b.grenze, 1) + ' − ' + zahlText(wert, 1) + ') / ' + zahlText(2 * b.uebergang, 1);
+    return { k: k, roh: roh, formel: formel + ' = ' + zahlText(roh, 2) + (roh !== k ? ' → ' + zahlText(k, 2) : '') };
+  }
+  function algorithmus(s) {
+    var best = null, rechnung = [];
+    regeln.forEach(function (r) {
+      var kMin = 1, teile = [];
+      r.bedingungen.forEach(function (b) {
+        var wert = s.merkmale[b.merkmal];
+        if (wert === undefined || isNaN(wert)) { kMin = 0; teile.push(b.text + ': Merkmal fehlt → 0'); return; }
+        var e = konfidenz(b, wert);
+        kMin = Math.min(kMin, e.k);
+        teile.push(b.merkmal + ' = ' + zahlText(wert, 1) + ' ' + EINHEIT[b.merkmal] + ', ' + b.text + ': ' + e.formel);
+      });
+      rechnung.push({ regel: r, k: kMin, teile: teile });
+      if (!best || kMin > best.k) best = { regel: r, k: kMin };
+    });
+    return { funktion: best.regel.funktion, k: best.k, regel: best.regel, rechnung: rechnung };
+  }
+  function bewerte(s) {
+    var alg = algorithmus(s), ki = kiAntworten[s.nr] || null, me = mensch[s.nr] || null;
+    var e = { alg: alg, ki: ki, mensch: me };
+    if (alg.k >= schwelleAlg) { e.stufe = 'Algorithmus'; e.funktion = alg.funktion; e.k = alg.k; }
+    else if (ki && ki.k >= schwelleKI) { e.stufe = 'KI'; e.funktion = ki.funktion; e.k = ki.k; }
+    else if (me) { e.stufe = 'Mensch'; e.funktion = me.funktion; e.k = 1; }
+    else { e.stufe = 'Offen'; e.funktion = null; e.k = null; }
+    s.leiter = e;
+    return e;
+  }
+  function bewerteAlle() { modell.staebe.forEach(bewerte); }
+
+  // Text, den die App der KI-Stufe über einen Stab gibt
+  function beschreibung(s) {
+    function ende(k, wo) {
+      var l = modell.lagerVon[k.nr];
+      var andere = (modell.anKnoten[k.nr] || []).filter(function (x) { return x !== s; });
+      var g = {};
+      andere.forEach(function (x) {
+        var key = (x.richtung === 'vertikal' ? 'senkrecht' : x.richtung === 'schräg' ? 'schräg' : 'waagerecht in ' + x.richtung) +
+          ' ' + (x.qs ? x.qs.name.replace('Rectangle ', '') : '?');
+        (g[key] = g[key] || []).push(x.nr);
+      });
+      var anschl = Object.keys(g).map(function (key) { return key + ' (Stab ' + g[key].join(', ') + ')'; }).join('; ') || 'nichts';
+      var oben = andere.filter(function (x) { return x.richtung === 'vertikal' && Math.min(x.ka.z, x.ke.z) < k.z; }).length;
+      var unten = andere.filter(function (x) { return x.richtung === 'vertikal' && Math.max(x.ka.z, x.ke.z) > k.z; }).length;
+      return wo + ' Knoten ' + k.nr + ' (Z = ' + zahlText(k.z, 2) + ' m): Lager ' +
+        (l ? ['uX', 'uY', 'uZ', 'φX', 'φY', 'φZ'].filter(function (n, i) { return l.frei[i] === 'x'; }).join(', ') + ' fest' : 'keins') +
+        '; Stütze darüber ' + oben + ', darunter ' + unten + '; schließt an: ' + anschl + '.';
+    }
+    var a = s.leiter.alg;
+    return 'Stab ' + s.nr + ', ' + (s.richtung === 'vertikal' ? 'senkrecht' : s.richtung === 'schräg' ? 'schräg' : 'waagerecht in ' + s.richtung + '-Richtung') +
+      ', Neigung ' + zahlText(s.neigung, 1) + '°, Länge ' + zahlText(s.l, 2) + ' m, Querschnitt ' + (s.qs ? s.qs.name : '?') +
+      ', Material ' + (s.mat ? s.mat.name.split('|')[0].trim() : '?') + ', Lage im Grundriss: ' + s.lage + '. ' +
+      'Gelenke: ' + (s.gelA || s.gelE ? 'Anfang ' + (s.gelA || '–') + ', Ende ' + (s.gelE || '–') : 'keine') + '. ' +
+      ende(s.ka, 'Anfang') + ' ' + ende(s.ke, 'Ende') + ' ' +
+      'Im Feld: ' + (s.imFeld.length ? 'Knoten ' + s.imFeld.join(', ') : 'keine weiteren Knoten oder Stäbe') + '. ' +
+      'Vorschlag Algorithmus: ' + a.funktion + ' (' + a.regel.nr + '), Konfidenz ' + zahlText(a.k, 2) + '.';
+  }
+
+  // ---------- Mensch: speichern ----------
+  function ladeMenschLokal() {
+    try {
+      var t = window.localStorage.getItem(SPEICHER);
+      if (t) { var o = JSON.parse(t); Object.keys(o).forEach(function (k) { mensch[k] = o[k]; }); }
+    } catch (e) { /* Speicher nicht verfügbar */ }
+  }
+  function speichereMensch() {
+    try {
+      var lokal = {};
+      Object.keys(mensch).forEach(function (k) { if (mensch[k].quelle === 'App') lokal[k] = mensch[k]; });
+      window.localStorage.setItem(SPEICHER, JSON.stringify(lokal));
+    } catch (e) { /* Speicher nicht verfügbar */ }
+  }
+  function entscheide(nummern, funktion) {
+    var datum = new Date().toISOString().slice(0, 10);
+    nummern.forEach(function (n) {
+      if (funktion) mensch[n] = { funktion: funktion, datum: datum, quelle: 'App' };
+      else delete mensch[n];
+    });
+    speichereMensch();
+    aktualisiere();
+  }
+  function menschCSV() {
+    var z = ['stab;funktion;datum'];
+    Object.keys(mensch).map(Number).sort(function (a, b) { return a - b; }).forEach(function (n) {
+      z.push(n + ';' + mensch[n].funktion + ';' + mensch[n].datum);
+    });
+    var blob = new Blob([z.join('\n') + '\n'], { type: 'text/csv;charset=utf-8' });
+    var a = document.createElement('a');
+    a.href = URL.createObjectURL(blob);
+    a.download = 'mensch_funktion.csv';
+    document.body.appendChild(a); a.click(); a.remove();
+  }
+
+  // ---------- Gruppen ----------
+  function gruppen() {
+    var g = {}, liste = [];
+    modell.staebe.forEach(function (s) {
+      if (!g[s.gruppe]) { g[s.gruppe] = { name: s.gruppe, staebe: [] }; liste.push(g[s.gruppe]); }
+      g[s.gruppe].staebe.push(s);
+    });
+    liste.sort(function (a, b) { return a.name < b.name ? -1 : 1; });
+    return liste;
+  }
+  // Zusammenfassung wie "Träger 0,50" oder "Stütze 0,97–0,98 (2 Werte)"
+  function fasse(werte) {
+    var g = {};
+    werte.forEach(function (w) { if (!w) return; (g[w.funktion] = g[w.funktion] || []).push(w.k); });
+    return Object.keys(g).map(function (f) {
+      var ks = g[f], lo = Math.min.apply(null, ks), hi = Math.max.apply(null, ks);
+      return marke(f, FARBEN_FUNKTION[f] || '#666') + ' ' + zahlText(lo, 2) + (hi !== lo ? '–' + zahlText(hi, 2) : '') +
+        (Object.keys(g).length > 1 ? ' (' + ks.length + ')' : '');
+    }).join('<br>') || '–';
+  }
+
+  // ---------- Anzeige: Offen ----------
+  function zeigeOffen() {
+    var el = document.getElementById('offen');
+    var offeneGruppen = gruppen().map(function (g) {
+      return { g: g, offen: g.staebe.filter(function (s) { return s.leiter.stufe === 'Offen'; }) };
+    }).filter(function (x) { return x.offen.length; });
+    var anzahlMensch = modell.staebe.filter(function (s) { return s.leiter.stufe === 'Mensch'; }).length;
+    var anzahlOffen = 0;
+    offeneGruppen.forEach(function (x) { anzahlOffen += x.offen.length; });
+    var h = '<h2>Offen: ' + (anzahlOffen ? anzahlOffen + ' Stäbe brauchen eure Entscheidung' : 'keine offenen Entscheidungen') + '</h2>';
+    if (!anzahlOffen) h += '<p class="klein">Alle Stäbe sind durch Algorithmus, KI oder euch entschieden.</p>';
+    offeneGruppen.forEach(function (x, i) {
+      var s0 = x.offen[0];
+      h += '<div class="offen-gruppe"><strong>' + esc(x.g.name) + '</strong> – ' + x.offen.length + ' von ' + x.g.staebe.length + ' Stäben offen' +
+        '<div class="klein">Stab ' + esc(x.offen.map(function (s) { return s.nr; }).join(', ')) + '</div>' +
+        '<div class="zeile">1 Algorithmus: ' + fasse(x.offen.map(function (s) { return { funktion: s.leiter.alg.funktion, k: s.leiter.alg.k }; })) +
+        ' <span class="klein">(Schwelle ' + zahlText(schwelleAlg, 2) + ')</span></div>' +
+        '<div class="zeile">2 KI: ' + fasse(x.offen.map(function (s) { return s.leiter.ki; })) +
+        ' <span class="klein">(Schwelle ' + zahlText(schwelleKI, 2) + ')</span></div>' +
+        (s0.leiter.ki ? '<div class="klein">Begründung KI: ' + esc(s0.leiter.ki.begruendung) + '</div>' : '<div class="klein">Keine KI-Antwort vorhanden.</div>') +
+        '<div class="zeile">3 Ihr: <select data-offen="' + i + '"><option value="">Funktion wählen …</option>' +
+        FUNKTIONEN.map(function (f) { return '<option>' + f + '</option>'; }).join('') + '</select>' +
+        '<button class="haupt" data-offen-ok="' + i + '">Für ' + x.offen.length + ' Stäbe übernehmen</button></div></div>';
+    });
+    if (anzahlMensch || Object.keys(mensch).length) {
+      h += '<div class="zeile klein">Von euch entschieden: ' + anzahlMensch + ' Stäbe (gespeichert in diesem Browser).' +
+        ' <button id="menschCSV">Als CSV herunterladen</button> <button id="menschReset">Alle eigenen Entscheidungen zurücknehmen</button></div>';
+    }
+    el.innerHTML = h;
+    el.hidden = false;
+    offeneGruppen.forEach(function (x, i) {
+      el.querySelector('[data-offen-ok="' + i + '"]').addEventListener('click', function () {
+        var f = el.querySelector('[data-offen="' + i + '"]').value;
+        if (!f) { alert('Bitte zuerst eine Funktion wählen.'); return; }
+        entscheide(x.offen.map(function (s) { return s.nr; }), f);
+      });
+    });
+    var b1 = document.getElementById('menschCSV'); if (b1) b1.addEventListener('click', menschCSV);
+    var b2 = document.getElementById('menschReset'); if (b2) b2.addEventListener('click', function () {
+      if (!confirm('Alle in diesem Browser gespeicherten Entscheidungen zurücknehmen?')) return;
+      entscheide(Object.keys(mensch).filter(function (k) { return mensch[k].quelle === 'App'; }), null);
+    });
+  }
+
+  // ---------- Anzeige: Leiter ----------
+  function zeigeLeiter() {
+    var el = document.getElementById('leiter');
+    var zaehl = {}, fz = {};
+    modell.staebe.forEach(function (s) {
+      zaehl[s.leiter.stufe] = (zaehl[s.leiter.stufe] || 0) + 1;
+      var f = s.leiter.funktion || 'offen';
+      fz[f] = (fz[f] || 0) + 1;
+    });
+    var h = '<h2>Stabfunktion: Entscheidungsleiter</h2>';
+    h += '<p class="klein">Jeder Stab bekommt eine Funktion. Stufe 1 Algorithmus (Regeln aus regeln.csv), darunter Stufe 2 KI, darunter Stufe 3 ihr. ' +
+      'Die Schwellen könnt ihr hier verschieben, alles rechnet sofort neu.</p>';
+    h += '<div class="schwellen">' +
+      '<label>Schwelle Algorithmus: <strong id="wAlg">' + zahlText(schwelleAlg, 2) + '</strong>' +
+      '<input type="range" id="sAlg" min="0.5" max="1" step="0.05" value="' + schwelleAlg + '"></label>' +
+      '<label>Schwelle KI: <strong id="wKI">' + zahlText(schwelleKI, 2) + '</strong>' +
+      '<input type="range" id="sKI" min="0.5" max="1" step="0.05" value="' + schwelleKI + '"></label>' +
+      '<div class="box"><button id="sReset">Schwellen auf 0,80 / 0,80</button><p class="klein" style="margin:.4rem 0 0">Festgelegt in CLAUDE.md, Abschnitt Entscheidungsleiter.</p></div>' +
+      '</div>';
+    h += '<h3>Ergebnis</h3><div class="kacheln">' +
+      STUFEN.map(function (st) { return kachel(zaehl[st] || 0, 'Stufe ' + st, FARBEN_STUFE[st]); }).join('') + '</div>';
+    h += '<div class="kacheln" style="margin-top:.75rem">' +
+      FUNKTIONEN.concat(['offen']).map(function (f) { return kachel(fz[f] || 0, f, FARBEN_FUNKTION[f]); }).join('') + '</div>';
+
+    // Regeln
+    h += '<h3>Regeln (Stufe 1)</h3>' + tabelle(['Nr.', 'Funktion', 'Bedingungen', 'Erklärung'],
+      regeln.map(function (r) {
+        return [esc(r.nr), marke(r.funktion, FARBEN_FUNKTION[r.funktion] || '#666'),
+          '<code>' + esc(r.bedingungen.map(function (b) { return b.text; }).join(' & ')) + '</code>', esc(r.erklaerung)];
+      }), [], null, [3]) +
+      '<p class="quelle">Quelle: daten/tragwerksmodell/regeln.csv. Merkmale: neigung [°] aus den Knotenkoordinaten, hoehe [mm] aus der Querschnittsbezeichnung (b/h), ' +
+      'laenge [m] aus „1.17 Stäbe“. Konfidenz einer Bedingung = 0,5 + Abstand zur Grenze / (2 · Übergang), begrenzt auf 0 bis 1. ' +
+      'Mehrere Bedingungen: der kleinste Wert zählt. Es gewinnt die Regel mit der höchsten Konfidenz.</p>';
+
+    // Gruppen
+    h += '<h3>Gruppen: alle drei Stufen</h3>' + tabelle(['Gruppe', 'Stäbe', '1 Algorithmus', '2 KI', '3 Ihr', 'Ergebnis'],
+      gruppen().map(function (g) {
+        var st = {};
+        g.staebe.forEach(function (s) { st[s.leiter.stufe] = (st[s.leiter.stufe] || 0) + 1; });
+        var me = g.staebe.filter(function (s) { return s.leiter.stufe === 'Mensch'; });
+        var off = st['Offen'] || 0;
+        var spalteMensch = off ? '<span class="err">' + off + ' offen</span>' : '';
+        if (me.length) spalteMensch += (spalteMensch ? '<br>' : '') + fasse(me.map(function (s) { return { funktion: s.leiter.funktion, k: 1 }; }));
+        if (!spalteMensch) spalteMensch = '<span class="klein">nicht nötig</span>';
+        var erg = STUFEN.filter(function (x) { return st[x]; }).map(function (x) { return marke(x + ' ' + st[x], FARBEN_STUFE[x]); }).join(' ');
+        return [esc(g.name), zahl(g.staebe.length, 0),
+          fasse(g.staebe.map(function (s) { return { funktion: s.leiter.alg.funktion, k: s.leiter.alg.k }; })),
+          fasse(g.staebe.map(function (s) { return s.leiter.ki; })),
+          spalteMensch, erg];
+      }), [1]) +
+      '<p class="quelle">KI-Antworten: daten/tragwerksmodell/ki_funktion.csv. Ohne API-Schlüssel hat der Agent (Claude) beim Bauen die KI-Stufe übernommen ' +
+      'und je Stab Funktion, Konfidenz und Begründung geschrieben. Eure Entscheidungen: in diesem Browser gespeichert' +
+      (modell.menschDatei ? ' und aus daten/tragwerksmodell/mensch_funktion.csv' : '') + '.</p>';
+
+    // Alle Stäbe
+    h += '<details><summary>Alle Stäbe mit Leiter (' + modell.staebe.length + ')</summary>' +
+      tabelle(['Nr.', 'Gruppe', 'Neigung [°]', 'h [mm]', 'L [m]', 'Algorithmus', 'KI', 'Stufe', 'Funktion'],
+        modell.staebe.map(function (s) {
+          var e = s.leiter;
+          return [s.nr, esc(s.gruppe), zahl(s.neigung, 1), zahl(s.merkmale.hoehe, 0), zahl(s.l, 2),
+            esc(e.alg.funktion) + ' ' + zahlText(e.alg.k, 2) + ' <span class="klein">(' + esc(e.alg.regel.nr) + ')</span>',
+            e.ki ? esc(e.ki.funktion) + ' ' + zahlText(e.ki.k, 2) : '–',
+            marke(e.stufe, FARBEN_STUFE[e.stufe]),
+            e.funktion ? marke(e.funktion, FARBEN_FUNKTION[e.funktion]) : '–'];
+        }), [0, 2, 3, 4]) + '</details>';
+    el.innerHTML = h;
+
+    // Beim Ziehen nur die Zahl zeigen, beim Loslassen neu rechnen (sonst bricht das Neuzeichnen das Ziehen ab)
+    document.getElementById('sAlg').addEventListener('input', function (ev) { document.getElementById('wAlg').textContent = zahlText(+ev.target.value, 2); });
+    document.getElementById('sKI').addEventListener('input', function (ev) { document.getElementById('wKI').textContent = zahlText(+ev.target.value, 2); });
+    document.getElementById('sAlg').addEventListener('change', function (ev) { schwelleAlg = +ev.target.value; aktualisiere(); });
+    document.getElementById('sKI').addEventListener('change', function (ev) { schwelleKI = +ev.target.value; aktualisiere(); });
+    document.getElementById('sReset').addEventListener('click', function () { schwelleAlg = 0.8; schwelleKI = 0.8; aktualisiere(); });
+  }
+
+  function kachel(wert, name, farbe) {
+    return '<div class="kachel"' + (farbe ? ' style="border-left:4px solid ' + farbe + '"' : '') + '><div class="wert">' + wert +
+      '</div><div class="name">' + esc(name) + '</div></div>';
+  }
+  function aufklapp(titel, inhalt) {
+    return '<details><summary>' + esc(titel) + '</summary>' + inhalt + '</details>';
+  }
+
+  // Alles neu bewerten und anzeigen (Fokus des Schiebereglers bleibt erhalten)
+  function aktualisiere() {
+    var aktiv = document.activeElement && document.activeElement.id;
+    bewerteAlle();
+    zeigeOffen();
+    zeigeLeiter();
+    if (ansicht3D) ansicht3D.faerben();
+    if (auswahlStab) zeigeStabDetails(auswahlStab);
+    if (aktiv && document.getElementById(aktiv)) document.getElementById(aktiv).focus();
+  }
+
+  // ---------- Anzeige: Etappe 1 ----------
   function zeige(m) {
     var b = m.blaetter, h = '';
     var staebe = m.staebe;
@@ -214,8 +597,7 @@
     var lagerKnoten = [];
     m.lager.forEach(function (l) { lagerKnoten = lagerKnoten.concat(l.knoten); });
 
-    // Kennzahlen
-    h += '<h2>Überblick</h2><div class="kacheln">' +
+    h += '<h2>Modell: Überblick</h2><div class="kacheln">' +
       kachel(Object.keys(m.knoten).length, 'Knoten') +
       kachel(staebe.length, 'Stäbe') +
       kachel(zahl(sumL, 2) + ' m', 'Gesamtlänge Stäbe') +
@@ -226,10 +608,8 @@
       '</div>' + quelle('1.1 Knoten, 1.17 Stäbe, 1.13 Querschnitte, 1.3 Materialien, 1.7 Knotenlager',
                         'Länge aus Spalte „Länge L [m]“, Gewicht aus Spalte „Gewicht G [kg]“');
 
-    // Prüfungen
     h += '<h2>Prüfungen beim Einlesen</h2><ul class="pruef">' + pruefungen(m) + '</ul>';
 
-    // Summen je Material und je Querschnitt
     h += '<h2>Summen je Material</h2>' + summenTabelle(staebe, function (s) {
       return s.mat ? s.mat.nr + ' · ' + s.mat.name : 'ohne Material';
     }, 'Material') + quelle('1.17 Stäbe → 1.13 Querschnitte → 1.3 Materialien', 'Material über Querschnitt am Stabanfang');
@@ -238,7 +618,6 @@
       return s.qs ? s.qs.nr + ' · ' + s.qs.name : 'ohne Querschnitt';
     }, 'Querschnitt') + quelle('1.17 Stäbe → 1.13 Querschnitte');
 
-    // Struktur der Blätter
     h += '<h2>Struktur der Blätter</h2><p class="quelle">Zeile 1 Titel, Zeilen 2–3 Kopf (verbundene Zellen aufgefüllt), Daten ab Zeile 4.</p>';
     h += tabelle(['Blatt', 'Datenzeilen', 'Spalten (Kopf aus Zeilen 2 und 3)'],
       Object.keys(b).map(function (k) {
@@ -247,7 +626,6 @@
       }), [1]);
     h += '<p class="quelle">Nicht eingelesen, weil für Randbedingungen nicht nötig: 2.1 Lastfälle, 2.5 Lastkombinationen, 4.1 Stäbe - Schnittgrößen.</p>';
 
-    // Detailtabellen
     h += '<h2>Tabellen</h2>';
     h += aufklapp('Materialien (' + Object.keys(m.material).length + ')',
       tabelle(['Nr.', 'Bezeichnung', 'Wichte γ [kN/m³]', 'E-Modul E [N/mm²]'],
@@ -263,7 +641,7 @@
       tabelle(['Nr.', 'Knoten', 'uX', 'uY', 'uZ', 'φX', 'φY', 'φZ'],
         m.lager.map(function (l) {
           return [l.nr, esc(l.text)].concat(l.frei.map(function (v) { return v === 'x' ? 'fest' : 'frei'; }));
-        }), [0]) + quelle('1.7 Knotenlager', '„x“ = fest, leer = frei') );
+        }), [0]) + quelle('1.7 Knotenlager', '„x“ = fest, leer = frei'));
 
     h += aufklapp('Knoten (' + Object.keys(m.knoten).length + ')',
       tabelle(['Nr.', 'X [m]', 'Y [m]', 'Z [m]', 'Lager'],
@@ -284,12 +662,6 @@
     inhaltEl.innerHTML = h;
   }
 
-  function kachel(wert, name) {
-    return '<div class="kachel"><div class="wert">' + wert + '</div><div class="name">' + esc(name) + '</div></div>';
-  }
-  function aufklapp(titel, inhalt) {
-    return '<details><summary>' + esc(titel) + '</summary>' + inhalt + '</details>';
-  }
   function summenTabelle(staebe, schluessel, name) {
     var gruppen = {}, reihenfolge = [];
     staebe.forEach(function (s) {
@@ -327,6 +699,10 @@
     zeile(ohneMat.length === 0, ohneMat.length === 0 ? 'Alle Stäbe haben einen Querschnitt mit bekanntem Material.'
       : ohneMat.length + ' Stäbe ohne Querschnitt oder Material.');
 
+    var ohneH = Object.keys(m.qs).filter(function (k) { return isNaN(m.qs[k].h); });
+    zeile(ohneH.length === 0, ohneH.length === 0 ? 'Querschnittshöhe h lässt sich bei allen Querschnitten aus der Bezeichnung (b/h) lesen.'
+      : 'Keine Höhe lesbar bei Querschnitt ' + ohneH.join(', ') + '.');
+
     var gelenke = m.staebe.filter(function (s) { return s.gelA || s.gelE; });
     zeile(true, gelenke.length === 0 ? 'Im Export sind keine Stabendgelenke eingetragen.' : gelenke.length + ' Stäbe mit Gelenk im Export.');
 
@@ -340,28 +716,83 @@
     var zs = {}; Object.keys(m.knoten).forEach(function (k) { zs[m.knoten[k].z] = (zs[m.knoten[k].z] || 0) + 1; });
     zeile(true, 'Ebenen (Z [m], Anzahl Knoten): ' + Object.keys(zs).map(Number).sort(function (a, b) { return b - a; })
       .map(function (z) { return zahl(z, 2) + ' (' + zs[z] + ')'; }).join(' · ') + '. Z zeigt nach unten, negative Werte liegen oben.');
+
+    var ohneKI = m.staebe.filter(function (s) { return !kiAntworten[s.nr]; });
+    zeile(ohneKI.length === 0, ohneKI.length === 0 ? 'Für alle Stäbe liegt eine KI-Antwort vor (ki_funktion.csv).'
+      : ohneKI.length + ' Stäbe ohne KI-Antwort: ' + ohneKI.slice(0, 20).map(function (s) { return s.nr; }).join(', '));
     return p.join('');
   }
 
-  // ---------- Start ----------
-  function lade() {
-    fetch(DATEI)
-      .then(function (r) {
-        if (!r.ok) throw new Error(DATEI + ' nicht gefunden (HTTP ' + r.status + ')');
-        return r.arrayBuffer();
-      })
-      .then(function (puffer) {
-        var mappe = XLSX.read(puffer, { type: 'array' });
-        var modell = baueModell(mappe);
-        zeige(modell);
-        zeige3D(modell);
-        statusEl.innerHTML = '<span class="ok">✓</span> ' + esc(DATEINAME) + ' gelesen: ' +
-          Object.keys(modell.knoten).length + ' Knoten, ' + modell.staebe.length + ' Stäbe.';
-        window.modell = modell;
-      })
-      .catch(function (f) {
-        statusEl.innerHTML = '<span class="err">Fehler: ' + esc(f.message) + '</span>';
-      });
+  // ---------- Details zu einem Stab / Knoten ----------
+  function zeilenTab(paare) {
+    return '<table>' + paare.map(function (p) { return '<tr><td>' + esc(p[0]) + '</td><td>' + p[1] + '</td></tr>'; }).join('') + '</table>';
+  }
+  function koord(k) { return '(' + zahl(k.x, 2) + ' | ' + zahl(k.y, 2) + ' | ' + zahl(k.z, 2) + ') m'; }
+
+  function zeigeStabDetails(s) {
+    auswahlStab = s;
+    var e = s.leiter, det = document.getElementById('details');
+    var h = '<h3>Stab ' + esc(s.nr) + ' ' + (e.funktion ? marke(e.funktion, FARBEN_FUNKTION[e.funktion]) : marke('offen', FARBEN_STUFE.Offen)) +
+      ' ' + marke(e.stufe, FARBEN_STUFE[e.stufe]) + '</h3>';
+    h += zeilenTab([
+      ['Gruppe', esc(s.gruppe)],
+      ['Knoten A', esc(s.ka.nr) + ' ' + koord(s.ka)],
+      ['Knoten E', esc(s.ke.nr) + ' ' + koord(s.ke)],
+      ['Querschnitt', s.qs ? esc(s.qs.nr + ' · ' + s.qs.name) + ', A = ' + zahl(s.qs.a, 0) + ' cm²' : '?'],
+      ['Material', s.mat ? esc(s.mat.name.split('|')[0].trim()) : '?'],
+      ['Länge L / Gewicht G', zahl(s.l, 2) + ' m / ' + zahl(s.g, 0) + ' kg'],
+      ['Gelenk A / E', (s.gelA ? esc(s.gelA) : '–') + ' / ' + (s.gelE ? esc(s.gelE) : '–')]
+    ]);
+    // Stufe 1
+    h += '<div class="stufe"><h4>1 Algorithmus: ' + esc(e.alg.funktion) + ' ' + zahlText(e.alg.k, 2) +
+      (e.alg.k >= schwelleAlg ? ' ✓ entscheidet' : ' &lt; ' + zahlText(schwelleAlg, 2)) + '</h4>' +
+      e.alg.rechnung.map(function (r) {
+        return '<div class="rechnung"><strong>' + esc(r.regel.nr + ' ' + r.regel.funktion) + ': ' + zahlText(r.k, 2) + '</strong>\n' +
+          esc(r.teile.join('\n')) + '</div>';
+      }).join('') + '<p class="quelle">Quelle: regeln.csv</p></div>';
+    // Stufe 2
+    if (e.alg.k < schwelleAlg) {
+      h += '<div class="stufe"><h4>2 KI: ' + (e.ki ? esc(e.ki.funktion) + ' ' + zahlText(e.ki.k, 2) +
+        (e.ki.k >= schwelleKI ? ' ✓ entscheidet' : ' &lt; ' + zahlText(schwelleKI, 2)) : 'keine Antwort') + '</h4>' +
+        '<div class="klein"><strong>Beschreibung an die KI:</strong> ' + esc(beschreibung(s)) + '</div>' +
+        (e.ki ? '<div class="klein" style="margin-top:.3rem"><strong>Begründung KI:</strong> ' + esc(e.ki.begruendung) + '</div>' : '') +
+        '<p class="quelle">Quelle: ki_funktion.csv (KI-Stufe vom Agenten beim Bauen übernommen)</p></div>';
+    } else {
+      h += '<div class="stufe"><h4>2 KI: nicht gefragt</h4><div class="klein">Antwort zum Vergleich: ' +
+        (e.ki ? esc(e.ki.funktion) + ' ' + zahlText(e.ki.k, 2) : '–') + '</div></div>';
+    }
+    // Stufe 3
+    if (e.stufe === 'Offen' || e.stufe === 'Mensch') {
+      h += '<div class="stufe"><h4>3 Ihr: ' + (e.mensch ? esc(e.mensch.funktion) + ' (' + esc(e.mensch.datum) + ')' : 'offen') + '</h4>' +
+        '<div class="zeile"><select id="menschWahl"><option value="">Funktion wählen …</option>' +
+        FUNKTIONEN.map(function (f) { return '<option' + (e.mensch && e.mensch.funktion === f ? ' selected' : '') + '>' + f + '</option>'; }).join('') +
+        '</select><button class="haupt" id="menschOk">Speichern</button>' +
+        (e.mensch ? '<button id="menschWeg">Zurücknehmen</button>' : '') + '</div></div>';
+    } else {
+      h += '<div class="stufe"><h4>3 Ihr: nicht nötig</h4></div>';
+    }
+    det.innerHTML = h;
+    var ok = document.getElementById('menschOk');
+    if (ok) ok.addEventListener('click', function () {
+      var f = document.getElementById('menschWahl').value;
+      if (!f) { alert('Bitte zuerst eine Funktion wählen.'); return; }
+      entscheide([s.nr], f);
+    });
+    var weg = document.getElementById('menschWeg');
+    if (weg) weg.addEventListener('click', function () { entscheide([s.nr], null); });
+  }
+
+  function zeigeKnotenDetails(k) {
+    auswahlStab = null;
+    var l = modell.lagerVon[k.nr];
+    var st = (modell.anKnoten[k.nr] || []).map(function (s) { return s.nr; });
+    var lagerText = l ? 'Lager ' + esc(l.nr) + ': ' + ['uX', 'uY', 'uZ', 'φX', 'φY', 'φZ'].map(function (n, i) {
+      return n + ' ' + (l.frei[i] === 'x' ? 'fest' : 'frei'); }).join(', ') : 'keins';
+    document.getElementById('details').innerHTML = '<h3>Knoten ' + esc(k.nr) + '</h3>' + zeilenTab([
+      ['Koordinaten', koord(k)],
+      ['Angeschlossene Stäbe', esc(st.join(', '))],
+      ['Lager laut Excel', lagerText]
+    ]) + '<p class="quelle">Quelle: Blatt „1.1 Knoten“, Lager aus „1.7 Knotenlager“ (nur angezeigt, Zuweisung folgt in Etappe 4).</p>';
   }
 
   // ---------- 3D-Ansicht (three.js) ----------
@@ -386,35 +817,32 @@
     licht.position.set(1, 2, 1.5);
     szene.add(licht);
 
-    // Begrenzung des Modells
     var box = new THREE.Box3();
     Object.keys(m.knoten).forEach(function (k) { box.expandByPoint(p3(m.knoten[k])); });
     var mitte = box.getCenter(new THREE.Vector3());
     var groesse = box.getSize(new THREE.Vector3()).length();
 
-    // Raster auf Höhe Z = 0
     var raster = new THREE.GridHelper(Math.ceil(groesse * 1.2), Math.ceil(groesse * 1.2 / 2.5),
       hell ? 0xc8ced6 : 0x3a3f46, hell ? 0xe1e5ea : 0x2a2e33);
     raster.position.set(mitte.x, box.min.y, mitte.z);
     szene.add(raster);
 
-    // Achsen im RFEM-Sinn am Ursprung
     var len = groesse * 0.12, o = new THREE.Vector3(0, 0, 0);
     szene.add(new THREE.ArrowHelper(new THREE.Vector3(1, 0, 0), o, len, 0xdd3333));
     szene.add(new THREE.ArrowHelper(new THREE.Vector3(0, 0, 1), o, len, 0x22aa22));
     szene.add(new THREE.ArrowHelper(new THREE.Vector3(0, -1, 0), o, len, 0x3366cc));
 
-    // Stäbe als dünne Zylinder (lassen sich besser anklicken als 1-px-Linien)
     var qsNummern = Object.keys(m.qs).map(Number).sort(function (a, b) { return a - b; });
-    var farbeVon = {};
-    qsNummern.forEach(function (n, i) { farbeVon[n] = FARBEN[i % FARBEN.length]; });
-    var materialien = {};
-    qsNummern.forEach(function (n) {
-      materialien[n] = new THREE.MeshLambertMaterial({ color: farbeVon[n] });
-    });
+    var farbeQS = {};
+    qsNummern.forEach(function (n, i) { farbeQS[n] = FARBEN_QS[i % FARBEN_QS.length]; });
+    var matCache = {};
+    function mat(farbe) {
+      if (!matCache[farbe]) matCache[farbe] = new THREE.MeshLambertMaterial({ color: farbe });
+      return matCache[farbe];
+    }
     var markiert = new THREE.MeshLambertMaterial({ color: hell ? 0x111111 : 0xffffff, emissive: 0xffcc00, emissiveIntensity: 0.6 });
 
-    var stabGruppen = {}, klickbar = [];
+    var stabGruppen = {}, klickbar = [], stabMeshes = [];
     qsNummern.forEach(function (n) { stabGruppen[n] = new THREE.Group(); szene.add(stabGruppen[n]); });
     var rStab = 0.09, oben = new THREE.Vector3(0, 1, 0);
     m.staebe.forEach(function (s) {
@@ -422,17 +850,15 @@
       var a = p3(s.ka), e = p3(s.ke);
       var richtung = new THREE.Vector3().subVectors(e, a);
       var geo = new THREE.CylinderGeometry(rStab, rStab, richtung.length(), 8);
-      var mesh = new THREE.Mesh(geo, materialien[s.qsA] || materialien[qsNummern[0]]);
+      var mesh = new THREE.Mesh(geo, mat(farbeQS[s.qsA] || '#888'));
       mesh.position.copy(a).add(richtung.clone().multiplyScalar(0.5));
       mesh.quaternion.setFromUnitVectors(oben, richtung.clone().normalize());
       mesh.userData = { art: 'stab', stab: s };
       (stabGruppen[s.qsA] || szene).add(mesh);
       klickbar.push(mesh);
+      stabMeshes.push(mesh);
     });
 
-    // Knoten als kleine Kugeln, Lagerknoten etwas größer markieren (nur Anzeige der Excel-Daten)
-    var lagerVon = {};
-    m.lager.forEach(function (l) { l.knoten.forEach(function (n) { lagerVon[n] = l; }); });
     var knotenGruppe = new THREE.Group();
     szene.add(knotenGruppe);
     var knotenMat = new THREE.MeshLambertMaterial({ color: hell ? 0x555b63 : 0xb8bfc8 });
@@ -446,28 +872,58 @@
       klickbar.push(mesh);
     });
 
-    // Legende mit Ein-/Ausblenden
-    var leg = document.getElementById('legende');
-    var anzahl = {};
-    m.staebe.forEach(function (s) { anzahl[s.qsA] = (anzahl[s.qsA] || 0) + 1; });
-    qsNummern.forEach(function (n) {
-      var lab = document.createElement('label');
-      lab.innerHTML = '<input type="checkbox" checked> <span class="farbe" style="background:' + farbeVon[n] + '"></span>' +
-        esc(n + ' · ' + m.qs[n].name) + ' <span class="quelle" style="margin:0">(' + (anzahl[n] || 0) + ')</span>';
-      lab.querySelector('input').addEventListener('change', function (ev) { stabGruppen[n].visible = ev.target.checked; });
-      leg.appendChild(lab);
-    });
-    leg.insertAdjacentHTML('beforeend', '<p class="quelle">Farbe nach Querschnitt am Stabanfang. Quelle: Blatt „1.17 Stäbe“, „1.13 Querschnitte“.</p>');
+    // Färben und Legende je nach Modus
+    var modusEl = document.getElementById('farbmodus');
+    var auswahl = null;
+    function farbeVon(s, modus) {
+      if (modus === 'qs') return farbeQS[s.qsA] || '#888';
+      if (modus === 'stufe') return FARBEN_STUFE[s.leiter.stufe];
+      return FARBEN_FUNKTION[s.leiter.funktion || 'offen'];
+    }
+    function faerben() {
+      var modus = modusEl.value;
+      stabMeshes.forEach(function (mesh) {
+        var mt = mat(farbeVon(mesh.userData.stab, modus));
+        if (auswahl && auswahl.objekt === mesh) auswahl.material = mt; else mesh.material = mt;
+      });
+      if (modus !== 'qs') qsNummern.forEach(function (n) { stabGruppen[n].visible = true; });
+      legende(modus);
+    }
+    function legende(modus) {
+      var leg = document.getElementById('legende'), h = '', zaehl = {};
+      m.staebe.forEach(function (s) {
+        var k = modus === 'qs' ? s.qsA : modus === 'stufe' ? s.leiter.stufe : (s.leiter.funktion || 'offen');
+        zaehl[k] = (zaehl[k] || 0) + 1;
+      });
+      if (modus === 'qs') {
+        h = '<h3>Querschnitte</h3>' + qsNummern.map(function (n) {
+          return '<label><input type="checkbox" data-qs="' + n + '"' + (stabGruppen[n].visible ? ' checked' : '') + '> <span class="farbe" style="background:' +
+            farbeQS[n] + '"></span>' + esc(n + ' · ' + m.qs[n].name) + ' <span class="klein">(' + (zaehl[n] || 0) + ')</span></label>';
+        }).join('') + '<p class="quelle">Querschnitt am Stabanfang, Blatt „1.17 Stäbe“.</p>';
+      } else if (modus === 'stufe') {
+        h = '<h3>Entscheidungsstufe</h3>' + STUFEN.map(function (st) {
+          return '<div><span class="farbe" style="background:' + FARBEN_STUFE[st] + '"></span>' + st + ' <span class="klein">(' + (zaehl[st] || 0) + ')</span></div>';
+        }).join('');
+      } else {
+        h = '<h3>Funktion</h3>' + FUNKTIONEN.concat(['offen']).map(function (f) {
+          return '<div><span class="farbe" style="background:' + FARBEN_FUNKTION[f] + '"></span>' + f + ' <span class="klein">(' + (zaehl[f] || 0) + ')</span></div>';
+        }).join('');
+      }
+      leg.innerHTML = h;
+      leg.querySelectorAll('[data-qs]').forEach(function (cb) {
+        cb.addEventListener('change', function () { stabGruppen[cb.getAttribute('data-qs')].visible = cb.checked; });
+      });
+    }
+    modusEl.addEventListener('change', faerben);
 
-    // Ansichten
     function setzeAnsicht(art) {
-      var d = groesse * 1.15, ziel = mitte.clone(), pos;
-      if (art === 'vorne') pos = new THREE.Vector3(mitte.x, mitte.y, mitte.z - d);      // Blick in +Y
-      else if (art === 'seite') pos = new THREE.Vector3(mitte.x + d, mitte.y, mitte.z); // Blick in -X
+      var d = groesse * 1.15, pos;
+      if (art === 'vorne') pos = new THREE.Vector3(mitte.x, mitte.y, mitte.z - d);
+      else if (art === 'seite') pos = new THREE.Vector3(mitte.x + d, mitte.y, mitte.z);
       else if (art === 'oben') pos = new THREE.Vector3(mitte.x, mitte.y + d, mitte.z + 0.001);
       else pos = new THREE.Vector3(mitte.x - d * 0.55, mitte.y + d * 0.45, mitte.z - d * 0.7);
       kamera.position.copy(pos);
-      steuerung.target.copy(ziel);
+      steuerung.target.copy(mitte);
       steuerung.update();
     }
     document.querySelectorAll('[data-ansicht]').forEach(function (b) {
@@ -480,8 +936,8 @@
     });
     setzeAnsicht('iso');
 
-    // Anklicken (nur wenn die Maus nicht gezogen wurde)
-    var strahl = new THREE.Raycaster(), maus = new THREE.Vector2(), start = null, auswahl = null;
+    var strahl = new THREE.Raycaster(), maus = new THREE.Vector2(), start = null;
+    function sichtbar(o) { return o.visible && o.parent.visible; }
     renderer.domElement.addEventListener('pointerdown', function (ev) { start = { x: ev.clientX, y: ev.clientY }; });
     renderer.domElement.addEventListener('pointerup', function (ev) {
       if (!start || Math.abs(ev.clientX - start.x) + Math.abs(ev.clientY - start.y) > 5) return;
@@ -489,8 +945,7 @@
       maus.x = ((ev.clientX - r.left) / r.width) * 2 - 1;
       maus.y = -((ev.clientY - r.top) / r.height) * 2 + 1;
       strahl.setFromCamera(maus, kamera);
-      var treffer = strahl.intersectObjects(klickbar.filter(function (o) { return o.visible && o.parent.visible; }));
-      // Knoten vor Stab bevorzugen, wenn beide getroffen werden
+      var treffer = strahl.intersectObjects(klickbar.filter(sichtbar));
       var t = treffer.filter(function (x) { return x.object.userData.art === 'knoten'; })[0] || treffer[0];
       waehle(t ? t.object : null);
     });
@@ -499,50 +954,26 @@
       maus.x = ((ev.clientX - r.left) / r.width) * 2 - 1;
       maus.y = -((ev.clientY - r.top) / r.height) * 2 + 1;
       strahl.setFromCamera(maus, kamera);
-      renderer.domElement.style.cursor = strahl.intersectObjects(klickbar).length ? 'pointer' : 'grab';
+      renderer.domElement.style.cursor = strahl.intersectObjects(klickbar.filter(sichtbar)).length ? 'pointer' : 'grab';
     });
 
     function waehle(obj) {
       if (auswahl) auswahl.objekt.material = auswahl.material;
       auswahl = null;
-      var det = document.getElementById('details');
-      if (!obj) { det.innerHTML = '<h3>Details</h3><p class="quelle">Stab oder Knoten anklicken.</p>'; return; }
+      if (!obj) {
+        auswahlStab = null;
+        document.getElementById('details').innerHTML = '<h3>Details</h3><p class="quelle">Stab oder Knoten anklicken.</p>';
+        return;
+      }
       auswahl = { objekt: obj, material: obj.material };
       obj.material = markiert;
-      det.innerHTML = obj.userData.art === 'stab' ? stabDetails(obj.userData.stab) : knotenDetails(obj.userData.knoten);
+      if (obj.userData.art === 'stab') zeigeStabDetails(obj.userData.stab); else zeigeKnotenDetails(obj.userData.knoten);
     }
-    function zeilen(paare) {
-      return '<table>' + paare.map(function (p) { return '<tr><td>' + esc(p[0]) + '</td><td>' + p[1] + '</td></tr>'; }).join('') + '</table>';
-    }
-    function koord(k) { return '(' + zahl(k.x, 2) + ' | ' + zahl(k.y, 2) + ' | ' + zahl(k.z, 2) + ') m'; }
-    function stabDetails(s) {
-      return '<h3>Stab ' + esc(s.nr) + '</h3>' + zeilen([
-        ['Linie', esc(s.linie)],
-        ['Knoten A', esc(s.ka.nr) + ' ' + koord(s.ka)],
-        ['Knoten E', esc(s.ke.nr) + ' ' + koord(s.ke)],
-        ['Stabtyp', esc(s.typ)],
-        ['Querschnitt', s.qs ? esc(s.qs.nr + ' · ' + s.qs.name) : '<span class="err">?</span>'],
-        ['Fläche A', s.qs ? zahl(s.qs.a, 0) + ' cm²' : '–'],
-        ['Material', s.mat ? esc(s.mat.name) : '<span class="err">?</span>'],
-        ['Länge L', zahl(s.l, 2) + ' m'],
-        ['Gewicht G', zahl(s.g, 0) + ' kg'],
-        ['Gelenk A / E', (s.gelA ? esc(s.gelA) : '–') + ' / ' + (s.gelE ? esc(s.gelE) : '–')]
-      ]) + '<p class="quelle">Quelle: Blatt „1.17 Stäbe“, Knoten über „1.2 Linien“ und „1.1 Knoten“.</p>';
-    }
-    function knotenDetails(k) {
-      var l = lagerVon[k.nr];
-      var stäbe = m.staebe.filter(function (s) { return (s.ka && s.ka.nr === k.nr) || (s.ke && s.ke.nr === k.nr); })
-        .map(function (s) { return s.nr; });
-      var lagerText = l ? 'Lager ' + esc(l.nr) + ': ' + ['uX', 'uY', 'uZ', 'φX', 'φY', 'φZ'].map(function (n, i) {
-        return n + ' ' + (l.frei[i] === 'x' ? 'fest' : 'frei'); }).join(', ') : 'keins';
-      return '<h3>Knoten ' + esc(k.nr) + '</h3>' + zeilen([
-        ['Koordinaten', koord(k)],
-        ['Angeschlossene Stäbe', esc(stäbe.join(', '))],
-        ['Lager laut Excel', lagerText]
-      ]) + '<p class="quelle">Quelle: Blatt „1.1 Knoten“, Lager aus „1.7 Knotenlager“ (nur angezeigt, Zuweisung folgt in Etappe 4).</p>';
+    function waehleStab(nr) {
+      var mesh = stabMeshes.filter(function (x) { return x.userData.stab.nr === nr; })[0];
+      if (mesh) waehle(mesh);
     }
 
-    // Größe anpassen und zeichnen
     function anpassen() {
       kamera.aspect = el.clientWidth / el.clientHeight;
       kamera.updateProjectionMatrix();
@@ -554,9 +985,47 @@
       steuerung.update();
       renderer.render(szene, kamera);
     })();
+    faerben();
+    return { faerben: faerben, waehleStab: waehleStab };
   }
 
-  // Bibliotheken nacheinander laden, dann starten
+  // ---------- Start ----------
+  function lade() {
+    Promise.all([
+      fetch(DATEI).then(function (r) {
+        if (!r.ok) throw new Error(DATEI + ' nicht gefunden (HTTP ' + r.status + ')');
+        return r.arrayBuffer();
+      }),
+      holeText(REGELN), holeText(KI_DATEI), holeText(MENSCH_DATEI, true)
+    ]).then(function (d) {
+      modell = baueModell(XLSX.read(d[0], { type: 'array' }));
+      regeln = leseCSV(d[1]).map(function (r) {
+        return { nr: r.nr, funktion: r.funktion, erklaerung: r.erklaerung,
+                 bedingungen: r.bedingungen.split('&').map(leseBedingung) };
+      });
+      leseCSV(d[2]).forEach(function (r) {
+        kiAntworten[+r.stab] = { funktion: r.funktion, k: num(r.konfidenz), begruendung: r.begruendung };
+      });
+      if (d[3]) {
+        modell.menschDatei = true;
+        leseCSV(d[3]).forEach(function (r) { mensch[+r.stab] = { funktion: r.funktion, datum: r.datum, quelle: 'Datei' }; });
+      }
+      ladeMenschLokal();
+      bewerteAlle();
+      zeige(modell);
+      zeigeOffen();
+      zeigeLeiter();
+      ansicht3D = zeige3D(modell);
+      statusEl.innerHTML = '<span class="ok">✓</span> ' + esc(DATEINAME) + ' gelesen: ' +
+        Object.keys(modell.knoten).length + ' Knoten, ' + modell.staebe.length + ' Stäbe, ' +
+        regeln.length + ' Regeln, ' + Object.keys(kiAntworten).length + ' KI-Antworten.';
+      window.modell = modell;
+    }).catch(function (f) {
+      statusEl.innerHTML = '<span class="err">Fehler: ' + esc(f.message) + '</span>';
+      console.error(f);
+    });
+  }
+
   function ladeSkripte(urls, fertig) {
     if (!urls.length) { fertig(); return; }
     var s = document.createElement('script');

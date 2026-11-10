@@ -1,0 +1,5 @@
+nr;funktion;bedingungen;erklaerung
+R1;Stütze;neigung>=75±15;Steiler als etwa 75° gegen die Waagerechte: trägt senkrecht ab.
+R2;Träger;neigung<=15±15 & hoehe>=600±100;Waagerecht und hoher Querschnitt (ab etwa 600 mm): Hauptträger bzw. Unterzug.
+R3;Nebenträger;neigung<=15±15 & hoehe<=550±100 & laenge<=6,5±1;Waagerecht, niedriger Querschnitt und kürzere Spannweite.
+R4;Verband;neigung>=15±10 & neigung<=75±10;Schräg zwischen etwa 15° und 75°: Aussteifung.
