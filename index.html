@@ -39,13 +39,55 @@
   .ok { color: var(--ok); } .warn { color: var(--warn); } .err { color: var(--err); }
   #status { padding: .6rem .9rem; border-radius: 8px; background: var(--panel); border: 1px solid var(--line); }
   ul.pruef { margin: .25rem 0; padding-left: 1.2rem; }
+  /* 3D-Ansicht */
+  .ansicht { display: grid; grid-template-columns: 1fr 280px; gap: .75rem; }
+  @media (max-width: 760px) { .ansicht { grid-template-columns: 1fr; } }
+  #viewer { position: relative; height: 520px; border: 1px solid var(--line); border-radius: 8px;
+            overflow: hidden; background: var(--panel); touch-action: none; }
+  #viewer canvas { display: block; }
+  .knoepfe { display: flex; flex-wrap: wrap; gap: .4rem; margin: .5rem 0; }
+  button { font: inherit; font-size: .85rem; padding: .3rem .7rem; border-radius: 6px; cursor: pointer;
+           border: 1px solid var(--line); background: var(--panel); color: var(--text); }
+  button:hover { border-color: var(--accent); }
+  .seite { display: flex; flex-direction: column; gap: .75rem; }
+  .box { background: var(--panel); border: 1px solid var(--line); border-radius: 8px; padding: .6rem .8rem; font-size: .9rem; }
+  .box h3 { font-size: .95rem; margin: 0 0 .4rem; }
+  .legende label { display: flex; align-items: center; gap: .45rem; padding: .1rem 0; cursor: pointer; }
+  .farbe { width: 14px; height: 14px; border-radius: 3px; flex: none; }
+  .details table { font-size: .85rem; }
+  .details td { padding: .2rem .3rem; white-space: normal; }
+  .details td:first-child { color: var(--muted); }
+  .achsen span { font-weight: 600; }
 </style>
 </head>
 <body>
 <main>
   <h1>Randbedingungen Betonbau</h1>
-  <p class="unter">Etappe 1: Modell lesen · Datei <code>daten/tragwerksmodell/TAE_betonbau_Export.xlsx</code></p>
+  <p class="unter">Etappe 2: 3D-Darstellung · Datei <code>daten/tragwerksmodell/TAE_betonbau_Export.xlsx</code></p>
   <div id="status">Lade Daten …</div>
+
+  <h2>3D-Modell</h2>
+  <div class="knoepfe">
+    <button data-ansicht="iso">Ansicht zurücksetzen</button>
+    <button data-ansicht="vorne">Vorne (X–Z)</button>
+    <button data-ansicht="seite">Seite (Y–Z)</button>
+    <button data-ansicht="oben">Oben (X–Y)</button>
+    <button id="knotenSchalter">Knoten ausblenden</button>
+  </div>
+  <div class="ansicht">
+    <div id="viewer"></div>
+    <div class="seite">
+      <div class="box legende" id="legende"><h3>Querschnitte</h3></div>
+      <div class="box details" id="details"><h3>Details</h3><p class="quelle">Stab oder Knoten anklicken.</p></div>
+      <div class="box achsen">
+        <h3>Bedienung</h3>
+        Linke Maustaste: drehen · Rad: zoomen · Rechte Maustaste: verschieben.
+        Achsen wie RFEM: <span style="color:#d33">X</span>, <span style="color:#2a2">Y</span>,
+        <span style="color:#36c">Z (zeigt nach unten)</span>.
+      </div>
+    </div>
+  </div>
+
   <div id="inhalt"></div>
 </main>
 
@@ -53,6 +95,10 @@
   var DATEI = 'daten/tragwerksmodell/TAE_betonbau_Export.xlsx';
   var DATEINAME = 'TAE_betonbau_Export.xlsx';
   var SHEETJS = 'https://cdnjs.cloudflare.com/ajax/libs/xlsx/0.18.5/xlsx.full.min.js';
+  var THREE_JS = 'https://cdnjs.cloudflare.com/ajax/libs/three.js/r128/three.min.js';
+  var ORBIT_JS = 'https://cdn.jsdelivr.net/npm/three@0.128.0/examples/js/controls/OrbitControls.js';
+  // Farben je Querschnitt (Reihenfolge nach Querschnitts-Nr.)
+  var FARBEN = ['#2f6fdf', '#e07b24', '#2a9d58', '#c03a6b', '#8a5cd1', '#1fa3a3', '#b8a12a', '#6b7280'];
 
   var statusEl = document.getElementById('status');
   var inhaltEl = document.getElementById('inhalt');
@@ -308,6 +354,7 @@
         var mappe = XLSX.read(puffer, { type: 'array' });
         var modell = baueModell(mappe);
         zeige(modell);
+        zeige3D(modell);
         statusEl.innerHTML = '<span class="ok">✓</span> ' + esc(DATEINAME) + ' gelesen: ' +
           Object.keys(modell.knoten).length + ' Knoten, ' + modell.staebe.length + ' Stäbe.';
         window.modell = modell;
@@ -317,11 +364,208 @@
       });
   }
 
-  var skript = document.createElement('script');
-  skript.src = SHEETJS;
-  skript.onload = lade;
-  skript.onerror = function () { statusEl.innerHTML = '<span class="err">Fehler: SheetJS konnte nicht geladen werden.</span>'; };
-  document.head.appendChild(skript);
+  // ---------- 3D-Ansicht (three.js) ----------
+  // RFEM (X, Y, Z nach unten) -> three.js (x, y nach oben, z): (X, -Z, Y). Bleibt rechtshändig.
+  function p3(k) { return new THREE.Vector3(k.x, -k.z, k.y); }
+
+  function zeige3D(m) {
+    var el = document.getElementById('viewer');
+    var hell = !window.matchMedia('(prefers-color-scheme: dark)').matches;
+    var szene = new THREE.Scene();
+    szene.background = new THREE.Color(hell ? '#f5f7fa' : '#1e2125');
+    var kamera = new THREE.PerspectiveCamera(40, el.clientWidth / el.clientHeight, 0.1, 1000);
+    var renderer = new THREE.WebGLRenderer({ antialias: true });
+    renderer.setPixelRatio(window.devicePixelRatio || 1);
+    renderer.setSize(el.clientWidth, el.clientHeight);
+    el.appendChild(renderer.domElement);
+    var steuerung = new THREE.OrbitControls(kamera, renderer.domElement);
+    steuerung.enableDamping = true;
+
+    szene.add(new THREE.AmbientLight(0xffffff, 0.65));
+    var licht = new THREE.DirectionalLight(0xffffff, 0.55);
+    licht.position.set(1, 2, 1.5);
+    szene.add(licht);
+
+    // Begrenzung des Modells
+    var box = new THREE.Box3();
+    Object.keys(m.knoten).forEach(function (k) { box.expandByPoint(p3(m.knoten[k])); });
+    var mitte = box.getCenter(new THREE.Vector3());
+    var groesse = box.getSize(new THREE.Vector3()).length();
+
+    // Raster auf Höhe Z = 0
+    var raster = new THREE.GridHelper(Math.ceil(groesse * 1.2), Math.ceil(groesse * 1.2 / 2.5),
+      hell ? 0xc8ced6 : 0x3a3f46, hell ? 0xe1e5ea : 0x2a2e33);
+    raster.position.set(mitte.x, box.min.y, mitte.z);
+    szene.add(raster);
+
+    // Achsen im RFEM-Sinn am Ursprung
+    var len = groesse * 0.12, o = new THREE.Vector3(0, 0, 0);
+    szene.add(new THREE.ArrowHelper(new THREE.Vector3(1, 0, 0), o, len, 0xdd3333));
+    szene.add(new THREE.ArrowHelper(new THREE.Vector3(0, 0, 1), o, len, 0x22aa22));
+    szene.add(new THREE.ArrowHelper(new THREE.Vector3(0, -1, 0), o, len, 0x3366cc));
+
+    // Stäbe als dünne Zylinder (lassen sich besser anklicken als 1-px-Linien)
+    var qsNummern = Object.keys(m.qs).map(Number).sort(function (a, b) { return a - b; });
+    var farbeVon = {};
+    qsNummern.forEach(function (n, i) { farbeVon[n] = FARBEN[i % FARBEN.length]; });
+    var materialien = {};
+    qsNummern.forEach(function (n) {
+      materialien[n] = new THREE.MeshLambertMaterial({ color: farbeVon[n] });
+    });
+    var markiert = new THREE.MeshLambertMaterial({ color: hell ? 0x111111 : 0xffffff, emissive: 0xffcc00, emissiveIntensity: 0.6 });
+
+    var stabGruppen = {}, klickbar = [];
+    qsNummern.forEach(function (n) { stabGruppen[n] = new THREE.Group(); szene.add(stabGruppen[n]); });
+    var rStab = 0.09, oben = new THREE.Vector3(0, 1, 0);
+    m.staebe.forEach(function (s) {
+      if (!s.ka || !s.ke) return;
+      var a = p3(s.ka), e = p3(s.ke);
+      var richtung = new THREE.Vector3().subVectors(e, a);
+      var geo = new THREE.CylinderGeometry(rStab, rStab, richtung.length(), 8);
+      var mesh = new THREE.Mesh(geo, materialien[s.qsA] || materialien[qsNummern[0]]);
+      mesh.position.copy(a).add(richtung.clone().multiplyScalar(0.5));
+      mesh.quaternion.setFromUnitVectors(oben, richtung.clone().normalize());
+      mesh.userData = { art: 'stab', stab: s };
+      (stabGruppen[s.qsA] || szene).add(mesh);
+      klickbar.push(mesh);
+    });
+
+    // Knoten als kleine Kugeln, Lagerknoten etwas größer markieren (nur Anzeige der Excel-Daten)
+    var lagerVon = {};
+    m.lager.forEach(function (l) { l.knoten.forEach(function (n) { lagerVon[n] = l; }); });
+    var knotenGruppe = new THREE.Group();
+    szene.add(knotenGruppe);
+    var knotenMat = new THREE.MeshLambertMaterial({ color: hell ? 0x555b63 : 0xb8bfc8 });
+    var knotenGeo = new THREE.SphereGeometry(0.17, 12, 8);
+    Object.keys(m.knoten).forEach(function (k) {
+      var kn = m.knoten[k];
+      var mesh = new THREE.Mesh(knotenGeo, knotenMat);
+      mesh.position.copy(p3(kn));
+      mesh.userData = { art: 'knoten', knoten: kn };
+      knotenGruppe.add(mesh);
+      klickbar.push(mesh);
+    });
+
+    // Legende mit Ein-/Ausblenden
+    var leg = document.getElementById('legende');
+    var anzahl = {};
+    m.staebe.forEach(function (s) { anzahl[s.qsA] = (anzahl[s.qsA] || 0) + 1; });
+    qsNummern.forEach(function (n) {
+      var lab = document.createElement('label');
+      lab.innerHTML = '<input type="checkbox" checked> <span class="farbe" style="background:' + farbeVon[n] + '"></span>' +
+        esc(n + ' · ' + m.qs[n].name) + ' <span class="quelle" style="margin:0">(' + (anzahl[n] || 0) + ')</span>';
+      lab.querySelector('input').addEventListener('change', function (ev) { stabGruppen[n].visible = ev.target.checked; });
+      leg.appendChild(lab);
+    });
+    leg.insertAdjacentHTML('beforeend', '<p class="quelle">Farbe nach Querschnitt am Stabanfang. Quelle: Blatt „1.17 Stäbe“, „1.13 Querschnitte“.</p>');
+
+    // Ansichten
+    function setzeAnsicht(art) {
+      var d = groesse * 1.15, ziel = mitte.clone(), pos;
+      if (art === 'vorne') pos = new THREE.Vector3(mitte.x, mitte.y, mitte.z - d);      // Blick in +Y
+      else if (art === 'seite') pos = new THREE.Vector3(mitte.x + d, mitte.y, mitte.z); // Blick in -X
+      else if (art === 'oben') pos = new THREE.Vector3(mitte.x, mitte.y + d, mitte.z + 0.001);
+      else pos = new THREE.Vector3(mitte.x - d * 0.55, mitte.y + d * 0.45, mitte.z - d * 0.7);
+      kamera.position.copy(pos);
+      steuerung.target.copy(ziel);
+      steuerung.update();
+    }
+    document.querySelectorAll('[data-ansicht]').forEach(function (b) {
+      b.addEventListener('click', function () { setzeAnsicht(b.getAttribute('data-ansicht')); });
+    });
+    var knotenBtn = document.getElementById('knotenSchalter');
+    knotenBtn.addEventListener('click', function () {
+      knotenGruppe.visible = !knotenGruppe.visible;
+      knotenBtn.textContent = knotenGruppe.visible ? 'Knoten ausblenden' : 'Knoten einblenden';
+    });
+    setzeAnsicht('iso');
+
+    // Anklicken (nur wenn die Maus nicht gezogen wurde)
+    var strahl = new THREE.Raycaster(), maus = new THREE.Vector2(), start = null, auswahl = null;
+    renderer.domElement.addEventListener('pointerdown', function (ev) { start = { x: ev.clientX, y: ev.clientY }; });
+    renderer.domElement.addEventListener('pointerup', function (ev) {
+      if (!start || Math.abs(ev.clientX - start.x) + Math.abs(ev.clientY - start.y) > 5) return;
+      var r = renderer.domElement.getBoundingClientRect();
+      maus.x = ((ev.clientX - r.left) / r.width) * 2 - 1;
+      maus.y = -((ev.clientY - r.top) / r.height) * 2 + 1;
+      strahl.setFromCamera(maus, kamera);
+      var treffer = strahl.intersectObjects(klickbar.filter(function (o) { return o.visible && o.parent.visible; }));
+      // Knoten vor Stab bevorzugen, wenn beide getroffen werden
+      var t = treffer.filter(function (x) { return x.object.userData.art === 'knoten'; })[0] || treffer[0];
+      waehle(t ? t.object : null);
+    });
+    renderer.domElement.addEventListener('pointermove', function (ev) {
+      var r = renderer.domElement.getBoundingClientRect();
+      maus.x = ((ev.clientX - r.left) / r.width) * 2 - 1;
+      maus.y = -((ev.clientY - r.top) / r.height) * 2 + 1;
+      strahl.setFromCamera(maus, kamera);
+      renderer.domElement.style.cursor = strahl.intersectObjects(klickbar).length ? 'pointer' : 'grab';
+    });
+
+    function waehle(obj) {
+      if (auswahl) auswahl.objekt.material = auswahl.material;
+      auswahl = null;
+      var det = document.getElementById('details');
+      if (!obj) { det.innerHTML = '<h3>Details</h3><p class="quelle">Stab oder Knoten anklicken.</p>'; return; }
+      auswahl = { objekt: obj, material: obj.material };
+      obj.material = markiert;
+      det.innerHTML = obj.userData.art === 'stab' ? stabDetails(obj.userData.stab) : knotenDetails(obj.userData.knoten);
+    }
+    function zeilen(paare) {
+      return '<table>' + paare.map(function (p) { return '<tr><td>' + esc(p[0]) + '</td><td>' + p[1] + '</td></tr>'; }).join('') + '</table>';
+    }
+    function koord(k) { return '(' + zahl(k.x, 2) + ' | ' + zahl(k.y, 2) + ' | ' + zahl(k.z, 2) + ') m'; }
+    function stabDetails(s) {
+      return '<h3>Stab ' + esc(s.nr) + '</h3>' + zeilen([
+        ['Linie', esc(s.linie)],
+        ['Knoten A', esc(s.ka.nr) + ' ' + koord(s.ka)],
+        ['Knoten E', esc(s.ke.nr) + ' ' + koord(s.ke)],
+        ['Stabtyp', esc(s.typ)],
+        ['Querschnitt', s.qs ? esc(s.qs.nr + ' · ' + s.qs.name) : '<span class="err">?</span>'],
+        ['Fläche A', s.qs ? zahl(s.qs.a, 0) + ' cm²' : '–'],
+        ['Material', s.mat ? esc(s.mat.name) : '<span class="err">?</span>'],
+        ['Länge L', zahl(s.l, 2) + ' m'],
+        ['Gewicht G', zahl(s.g, 0) + ' kg'],
+        ['Gelenk A / E', (s.gelA ? esc(s.gelA) : '–') + ' / ' + (s.gelE ? esc(s.gelE) : '–')]
+      ]) + '<p class="quelle">Quelle: Blatt „1.17 Stäbe“, Knoten über „1.2 Linien“ und „1.1 Knoten“.</p>';
+    }
+    function knotenDetails(k) {
+      var l = lagerVon[k.nr];
+      var stäbe = m.staebe.filter(function (s) { return (s.ka && s.ka.nr === k.nr) || (s.ke && s.ke.nr === k.nr); })
+        .map(function (s) { return s.nr; });
+      var lagerText = l ? 'Lager ' + esc(l.nr) + ': ' + ['uX', 'uY', 'uZ', 'φX', 'φY', 'φZ'].map(function (n, i) {
+        return n + ' ' + (l.frei[i] === 'x' ? 'fest' : 'frei'); }).join(', ') : 'keins';
+      return '<h3>Knoten ' + esc(k.nr) + '</h3>' + zeilen([
+        ['Koordinaten', koord(k)],
+        ['Angeschlossene Stäbe', esc(stäbe.join(', '))],
+        ['Lager laut Excel', lagerText]
+      ]) + '<p class="quelle">Quelle: Blatt „1.1 Knoten“, Lager aus „1.7 Knotenlager“ (nur angezeigt, Zuweisung folgt in Etappe 4).</p>';
+    }
+
+    // Größe anpassen und zeichnen
+    function anpassen() {
+      kamera.aspect = el.clientWidth / el.clientHeight;
+      kamera.updateProjectionMatrix();
+      renderer.setSize(el.clientWidth, el.clientHeight);
+    }
+    window.addEventListener('resize', anpassen);
+    (function schleife() {
+      requestAnimationFrame(schleife);
+      steuerung.update();
+      renderer.render(szene, kamera);
+    })();
+  }
+
+  // Bibliotheken nacheinander laden, dann starten
+  function ladeSkripte(urls, fertig) {
+    if (!urls.length) { fertig(); return; }
+    var s = document.createElement('script');
+    s.src = urls[0];
+    s.onload = function () { ladeSkripte(urls.slice(1), fertig); };
+    s.onerror = function () { statusEl.innerHTML = '<span class="err">Fehler: ' + esc(urls[0]) + ' konnte nicht geladen werden.</span>'; };
+    document.head.appendChild(s);
+  }
+  ladeSkripte([SHEETJS, THREE_JS, ORBIT_JS], lade);
 </script>
 </body>
 </html>
