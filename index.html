@@ -3,45 +3,324 @@
 <head>
 <meta charset="utf-8">
 <meta name="viewport" content="width=device-width, initial-scale=1">
-<title>TAE-Workshop</title>
+<title>Randbedingungen Betonbau</title>
 <style>
-  body { font-family: system-ui, sans-serif; margin: 2rem 1rem; background: #fff; color: #222; }
-  h1 { font-size: 1.8rem; }
-  .fehler { color: #b00020; }
+  :root {
+    --bg: #ffffff; --text: #1d1f23; --muted: #5f6670; --line: #d9dde3;
+    --panel: #f5f7fa; --accent: #1f5fae; --ok: #1e7a3c; --warn: #a15c00; --err: #b00020;
+  }
+  @media (prefers-color-scheme: dark) {
+    :root {
+      --bg: #15171a; --text: #e6e8eb; --muted: #9aa2ad; --line: #2c3036;
+      --panel: #1e2125; --accent: #79aef0; --ok: #5cc27e; --warn: #e0a64a; --err: #ff6b7d;
+    }
+  }
+  * { box-sizing: border-box; }
+  body { margin: 0; padding: 1.5rem 1rem 3rem; background: var(--bg); color: var(--text);
+         font: 15px/1.45 system-ui, -apple-system, "Segoe UI", sans-serif; }
+  main { max-width: 1100px; margin: 0 auto; }
+  h1 { font-size: 1.6rem; margin: 0 0 .25rem; }
+  h2 { font-size: 1.2rem; margin: 2rem 0 .5rem; border-bottom: 1px solid var(--line); padding-bottom: .3rem; }
+  .unter { color: var(--muted); margin: 0 0 1rem; }
+  .quelle { color: var(--muted); font-size: .85rem; margin: .25rem 0 .75rem; }
+  .kacheln { display: grid; grid-template-columns: repeat(auto-fit, minmax(160px, 1fr)); gap: .75rem; }
+  .kachel { background: var(--panel); border: 1px solid var(--line); border-radius: 8px; padding: .75rem 1rem; }
+  .kachel .wert { font-size: 1.4rem; font-weight: 600; font-variant-numeric: tabular-nums; }
+  .kachel .name { color: var(--muted); font-size: .85rem; }
+  .tabelle { overflow-x: auto; border: 1px solid var(--line); border-radius: 8px; }
+  table { border-collapse: collapse; width: 100%; font-size: .9rem; }
+  th, td { padding: .35rem .6rem; border-bottom: 1px solid var(--line); text-align: left; white-space: nowrap; }
+  th { background: var(--panel); position: sticky; top: 0; font-weight: 600; }
+  td.zahl, th.zahl { text-align: right; font-variant-numeric: tabular-nums; }
+  tr.summe td { font-weight: 600; background: var(--panel); }
+  details { margin: .75rem 0; }
+  summary { cursor: pointer; font-weight: 600; padding: .3rem 0; }
+  details .tabelle { max-height: 420px; overflow: auto; }
+  .ok { color: var(--ok); } .warn { color: var(--warn); } .err { color: var(--err); }
+  #status { padding: .6rem .9rem; border-radius: 8px; background: var(--panel); border: 1px solid var(--line); }
+  ul.pruef { margin: .25rem 0; padding-left: 1.2rem; }
 </style>
 </head>
 <body>
-<h1 id="ausgabe">Lade Daten …</h1>
+<main>
+  <h1>Randbedingungen Betonbau</h1>
+  <p class="unter">Etappe 1: Modell lesen · Datei <code>daten/tragwerksmodell/TAE_betonbau_Export.xlsx</code></p>
+  <div id="status">Lade Daten …</div>
+  <div id="inhalt"></div>
+</main>
 
 <script>
-  var DATEI = 'daten/mengenliste/Mengenliste_Beispielprojekt.xlsx';
+  var DATEI = 'daten/tragwerksmodell/TAE_betonbau_Export.xlsx';
+  var DATEINAME = 'TAE_betonbau_Export.xlsx';
   var SHEETJS = 'https://cdnjs.cloudflare.com/ajax/libs/xlsx/0.18.5/xlsx.full.min.js';
-  var ausgabe = document.getElementById('ausgabe');
 
-  function zeigeFehler(text) {
-    ausgabe.textContent = 'Fehler: ' + text;
-    ausgabe.className = 'fehler';
+  var statusEl = document.getElementById('status');
+  var inhaltEl = document.getElementById('inhalt');
+
+  // ---------- Hilfsfunktionen ----------
+  function esc(s) {
+    return String(s === null || s === undefined ? '' : s)
+      .replace(/&/g, '&amp;').replace(/</g, '&lt;').replace(/>/g, '&gt;').replace(/"/g, '&quot;');
+  }
+  function zahl(v, nk) {
+    if (v === null || v === undefined || v === '' || isNaN(v)) return '<span class="warn">fehlt</span>';
+    return Number(v).toLocaleString('de-DE', { minimumFractionDigits: nk, maximumFractionDigits: nk });
+  }
+  function quelle(blatt, spalten) {
+    return '<p class="quelle">Quelle: ' + esc(DATEINAME) + ', Blatt „' + esc(blatt) + '“' +
+      (spalten ? ', ' + esc(spalten) : '') + '</p>';
+  }
+  // Knotenliste wie "1,3,5" oder "1-5,8" in Zahlen auflösen
+  function knotenListe(text) {
+    var liste = [];
+    String(text).split(',').forEach(function (teil) {
+      teil = teil.trim();
+      if (!teil) return;
+      var m = teil.match(/^(\d+)\s*-\s*(\d+)$/);
+      if (m) { for (var i = +m[1]; i <= +m[2]; i++) liste.push(i); }
+      else liste.push(+teil);
+    });
+    return liste;
   }
 
-  function ladeExcel() {
+  // Blatt einlesen: Zeile 1 Titel, Zeilen 2-3 Kopf (verbundene Zellen auffüllen), Daten ab Zeile 4
+  function leseBlatt(mappe, name) {
+    var ws = mappe.Sheets[name];
+    if (!ws) throw new Error('Blatt „' + name + '“ fehlt in ' + DATEINAME);
+    var roh = XLSX.utils.sheet_to_json(ws, { header: 1, defval: null, raw: true });
+    var breite = 0;
+    roh.forEach(function (z) { breite = Math.max(breite, z.length); });
+    var kopf2 = (roh[1] || []).slice(), kopf3 = (roh[2] || []).slice();
+    (ws['!merges'] || []).forEach(function (m) {
+      if (m.s.r === 1) for (var c = m.s.c + 1; c <= m.e.c; c++) kopf2[c] = kopf2[m.s.c];
+    });
+    var spalten = [];
+    for (var c = 0; c < breite; c++) {
+      var a = kopf2[c] === null || kopf2[c] === undefined ? '' : String(kopf2[c]);
+      var b = kopf3[c] === null || kopf3[c] === undefined ? '' : String(kopf3[c]);
+      spalten.push((a + ' ' + b).trim());
+    }
+    var daten = roh.slice(3).filter(function (z) {
+      return z.some(function (v) { return v !== null && v !== ''; });
+    });
+    return { name: name, titel: (roh[0] || [])[0], spalten: spalten, daten: daten,
+             verbunden: (ws['!merges'] || []).length };
+  }
+
+  function tabelle(kopf, zeilen, zahlSpalten, summenZeile) {
+    zahlSpalten = zahlSpalten || [];
+    var h = '<div class="tabelle"><table><thead><tr>';
+    kopf.forEach(function (k, i) { h += '<th' + (zahlSpalten.indexOf(i) >= 0 ? ' class="zahl"' : '') + '>' + esc(k) + '</th>'; });
+    h += '</tr></thead><tbody>';
+    zeilen.forEach(function (z) {
+      h += '<tr>';
+      z.forEach(function (v, i) { h += '<td' + (zahlSpalten.indexOf(i) >= 0 ? ' class="zahl"' : '') + '>' + v + '</td>'; });
+      h += '</tr>';
+    });
+    if (summenZeile) {
+      h += '<tr class="summe">';
+      summenZeile.forEach(function (v, i) { h += '<td' + (zahlSpalten.indexOf(i) >= 0 ? ' class="zahl"' : '') + '>' + v + '</td>'; });
+      h += '</tr>';
+    }
+    return h + '</tbody></table></div>';
+  }
+
+  // ---------- Modell aufbauen ----------
+  function baueModell(mappe) {
+    var b = {
+      knoten: leseBlatt(mappe, '1.1 Knoten'),
+      linien: leseBlatt(mappe, '1.2 Linien'),
+      material: leseBlatt(mappe, '1.3 Materialien'),
+      qs: leseBlatt(mappe, '1.13 Querschnitte'),
+      staebe: leseBlatt(mappe, '1.17 Stäbe'),
+      lager: leseBlatt(mappe, '1.7 Knotenlager')
+    };
+    var m = { blaetter: b, knoten: {}, linien: {}, material: {}, qs: {}, staebe: [], lager: [] };
+
+    b.knoten.daten.forEach(function (z) { m.knoten[z[0]] = { nr: z[0], x: z[1], y: z[2], z: z[3] }; });
+    b.linien.daten.forEach(function (z) { m.linien[z[0]] = { nr: z[0], knoten: knotenListe(z[1]), text: z[1] }; });
+    b.material.daten.forEach(function (z) { m.material[z[0]] = { nr: z[0], name: z[1], wichte: z[2], e: z[3] }; });
+    b.qs.daten.forEach(function (z) { m.qs[z[0]] = { nr: z[0], name: z[1], mat: z[2], a: z[3] }; });
+    b.staebe.daten.forEach(function (z) {
+      var linie = m.linien[z[1]];
+      var ka = linie ? m.knoten[linie.knoten[0]] : null;
+      var ke = linie ? m.knoten[linie.knoten[linie.knoten.length - 1]] : null;
+      var lGeo = (ka && ke) ? Math.sqrt(Math.pow(ke.x - ka.x, 2) + Math.pow(ke.y - ka.y, 2) + Math.pow(ke.z - ka.z, 2)) : NaN;
+      var qs = m.qs[z[3]];
+      m.staebe.push({
+        nr: z[0], linie: z[1], typ: z[2], qsA: z[3], qsE: z[4], gelA: z[5], gelE: z[6],
+        l: z[7], g: z[8], ka: ka, ke: ke, lGeo: lGeo,
+        qs: qs, mat: qs ? m.material[qs.mat] : null
+      });
+    });
+    b.lager.daten.forEach(function (z) {
+      m.lager.push({ nr: z[0], text: z[1], knoten: knotenListe(z[1]), frei: z.slice(2, 8) });
+    });
+    return m;
+  }
+
+  // ---------- Anzeige ----------
+  function zeige(m) {
+    var b = m.blaetter, h = '';
+    var staebe = m.staebe;
+    var sumL = 0, sumG = 0;
+    staebe.forEach(function (s) { sumL += s.l || 0; sumG += s.g || 0; });
+    var lagerKnoten = [];
+    m.lager.forEach(function (l) { lagerKnoten = lagerKnoten.concat(l.knoten); });
+
+    // Kennzahlen
+    h += '<h2>Überblick</h2><div class="kacheln">' +
+      kachel(Object.keys(m.knoten).length, 'Knoten') +
+      kachel(staebe.length, 'Stäbe') +
+      kachel(zahl(sumL, 2) + ' m', 'Gesamtlänge Stäbe') +
+      kachel(zahl(sumG, 0) + ' kg', 'Gesamtgewicht Stäbe') +
+      kachel(Object.keys(m.qs).length, 'Querschnitte') +
+      kachel(Object.keys(m.material).length, 'Materialien') +
+      kachel(lagerKnoten.length, 'Knoten mit Lager') +
+      '</div>' + quelle('1.1 Knoten, 1.17 Stäbe, 1.13 Querschnitte, 1.3 Materialien, 1.7 Knotenlager',
+                        'Länge aus Spalte „Länge L [m]“, Gewicht aus Spalte „Gewicht G [kg]“');
+
+    // Prüfungen
+    h += '<h2>Prüfungen beim Einlesen</h2><ul class="pruef">' + pruefungen(m) + '</ul>';
+
+    // Summen je Material und je Querschnitt
+    h += '<h2>Summen je Material</h2>' + summenTabelle(staebe, function (s) {
+      return s.mat ? s.mat.nr + ' · ' + s.mat.name : 'ohne Material';
+    }, 'Material') + quelle('1.17 Stäbe → 1.13 Querschnitte → 1.3 Materialien', 'Material über Querschnitt am Stabanfang');
+
+    h += '<h2>Summen je Querschnitt</h2>' + summenTabelle(staebe, function (s) {
+      return s.qs ? s.qs.nr + ' · ' + s.qs.name : 'ohne Querschnitt';
+    }, 'Querschnitt') + quelle('1.17 Stäbe → 1.13 Querschnitte');
+
+    // Struktur der Blätter
+    h += '<h2>Struktur der Blätter</h2><p class="quelle">Zeile 1 Titel, Zeilen 2–3 Kopf (verbundene Zellen aufgefüllt), Daten ab Zeile 4.</p>';
+    h += tabelle(['Blatt', 'Datenzeilen', 'Spalten (Kopf aus Zeilen 2 und 3)'],
+      Object.keys(b).map(function (k) {
+        var bl = b[k];
+        return [esc(bl.name), zahl(bl.daten.length, 0), esc(bl.spalten.join(' | '))];
+      }), [1]);
+    h += '<p class="quelle">Nicht eingelesen, weil für Randbedingungen nicht nötig: 2.1 Lastfälle, 2.5 Lastkombinationen, 4.1 Stäbe - Schnittgrößen.</p>';
+
+    // Detailtabellen
+    h += '<h2>Tabellen</h2>';
+    h += aufklapp('Materialien (' + Object.keys(m.material).length + ')',
+      tabelle(['Nr.', 'Bezeichnung', 'Wichte γ [kN/m³]', 'E-Modul E [N/mm²]'],
+        Object.keys(m.material).map(function (k) { var x = m.material[k];
+          return [x.nr, esc(x.name), zahl(x.wichte, 0), zahl(x.e, 0)]; }), [0, 2, 3]) + quelle('1.3 Materialien'));
+
+    h += aufklapp('Querschnitte (' + Object.keys(m.qs).length + ')',
+      tabelle(['Nr.', 'Bezeichnung', 'Material Nr.', 'Material', 'Fläche A [cm²]'],
+        Object.keys(m.qs).map(function (k) { var x = m.qs[k], mat = m.material[x.mat];
+          return [x.nr, esc(x.name), x.mat, mat ? esc(mat.name) : '<span class="err">unbekannt</span>', zahl(x.a, 0)]; }), [0, 2, 4]) + quelle('1.13 Querschnitte'));
+
+    h += aufklapp('Knotenlager (' + m.lager.length + ' Lagersatz, ' + lagerKnoten.length + ' Knoten)',
+      tabelle(['Nr.', 'Knoten', 'uX', 'uY', 'uZ', 'φX', 'φY', 'φZ'],
+        m.lager.map(function (l) {
+          return [l.nr, esc(l.text)].concat(l.frei.map(function (v) { return v === 'x' ? 'fest' : 'frei'; }));
+        }), [0]) + quelle('1.7 Knotenlager', '„x“ = fest, leer = frei') );
+
+    h += aufklapp('Knoten (' + Object.keys(m.knoten).length + ')',
+      tabelle(['Nr.', 'X [m]', 'Y [m]', 'Z [m]', 'Lager'],
+        Object.keys(m.knoten).map(function (k) { var x = m.knoten[k];
+          return [x.nr, zahl(x.x, 2), zahl(x.y, 2), zahl(x.z, 2), lagerKnoten.indexOf(x.nr) >= 0 ? 'ja' : ''];
+        }), [0, 1, 2, 3]) + quelle('1.1 Knoten', 'Lager aus 1.7 Knotenlager'));
+
+    h += aufklapp('Stäbe (' + staebe.length + ')',
+      tabelle(['Nr.', 'Linie', 'Knoten A', 'Knoten E', 'Stabtyp', 'Querschnitt', 'Material', 'Gelenk A', 'Gelenk E', 'L [m]', 'G [kg]'],
+        staebe.map(function (s) {
+          return [s.nr, s.linie, s.ka ? s.ka.nr : '<span class="err">?</span>', s.ke ? s.ke.nr : '<span class="err">?</span>',
+            esc(s.typ), s.qs ? esc(s.qs.name) + (s.qsA !== s.qsE ? ' <span class="warn">(Ende ' + s.qsE + ')</span>' : '') : '<span class="err">?</span>',
+            s.mat ? esc(s.mat.name.split('|')[0].trim()) : '<span class="err">?</span>',
+            s.gelA ? esc(s.gelA) : '–', s.gelE ? esc(s.gelE) : '–', zahl(s.l, 2), zahl(s.g, 0)];
+        }), [0, 1, 2, 3, 9, 10],
+        ['Summe', '', '', '', '', '', '', '', '', zahl(sumL, 2), zahl(sumG, 0)]) + quelle('1.17 Stäbe', 'Knoten über 1.2 Linien'));
+
+    inhaltEl.innerHTML = h;
+  }
+
+  function kachel(wert, name) {
+    return '<div class="kachel"><div class="wert">' + wert + '</div><div class="name">' + esc(name) + '</div></div>';
+  }
+  function aufklapp(titel, inhalt) {
+    return '<details><summary>' + esc(titel) + '</summary>' + inhalt + '</details>';
+  }
+  function summenTabelle(staebe, schluessel, name) {
+    var gruppen = {}, reihenfolge = [];
+    staebe.forEach(function (s) {
+      var k = schluessel(s);
+      if (!gruppen[k]) { gruppen[k] = { n: 0, l: 0, g: 0 }; reihenfolge.push(k); }
+      gruppen[k].n++; gruppen[k].l += s.l || 0; gruppen[k].g += s.g || 0;
+    });
+    reihenfolge.sort();
+    var n = 0, l = 0, g = 0;
+    var zeilen = reihenfolge.map(function (k) {
+      var x = gruppen[k]; n += x.n; l += x.l; g += x.g;
+      return [esc(k), zahl(x.n, 0), zahl(x.l, 2), zahl(x.g, 0)];
+    });
+    return tabelle([name, 'Anzahl Stäbe', 'Länge [m]', 'Gewicht [kg]'], zeilen, [1, 2, 3],
+      ['Summe', zahl(n, 0), zahl(l, 2), zahl(g, 0)]);
+  }
+
+  function pruefungen(m) {
+    var p = [];
+    function zeile(ok, text) { p.push('<li class="' + (ok ? 'ok' : 'warn') + '">' + (ok ? '✓ ' : '⚠ ') + text + '</li>'); }
+
+    var ohneLinie = m.staebe.filter(function (s) { return !s.ka || !s.ke; });
+    zeile(ohneLinie.length === 0, ohneLinie.length === 0 ? 'Alle Stäbe haben Anfangs- und Endknoten.'
+      : ohneLinie.length + ' Stäbe ohne gültige Knoten: ' + ohneLinie.map(function (s) { return s.nr; }).join(', '));
+
+    var abw = m.staebe.filter(function (s) { return isNaN(s.lGeo) || Math.abs(s.lGeo - s.l) > 0.005; });
+    zeile(abw.length === 0, abw.length === 0 ? 'Länge L [m] stimmt bei allen Stäben mit dem Abstand der Knotenkoordinaten überein (Toleranz 5 mm).'
+      : abw.length + ' Stäbe mit abweichender Länge: ' + abw.slice(0, 10).map(function (s) { return s.nr + ' (' + zahl(s.l, 3) + ' / ' + zahl(s.lGeo, 3) + ' m)'; }).join(', '));
+
+    var qsUngleich = m.staebe.filter(function (s) { return s.qsA !== s.qsE; });
+    zeile(qsUngleich.length === 0, qsUngleich.length === 0 ? 'Querschnitt am Anfang und Ende ist bei allen Stäben gleich.'
+      : qsUngleich.length + ' Stäbe mit veränderlichem Querschnitt (Anfang ≠ Ende).');
+
+    var ohneMat = m.staebe.filter(function (s) { return !s.mat; });
+    zeile(ohneMat.length === 0, ohneMat.length === 0 ? 'Alle Stäbe haben einen Querschnitt mit bekanntem Material.'
+      : ohneMat.length + ' Stäbe ohne Querschnitt oder Material.');
+
+    var gelenke = m.staebe.filter(function (s) { return s.gelA || s.gelE; });
+    zeile(true, gelenke.length === 0 ? 'Im Export sind keine Stabendgelenke eingetragen.' : gelenke.length + ' Stäbe mit Gelenk im Export.');
+
+    var lk = []; m.lager.forEach(function (l) { lk = lk.concat(l.knoten); });
+    var unbekannt = lk.filter(function (n) { return !m.knoten[n]; });
+    var zWerte = {}; lk.forEach(function (n) { if (m.knoten[n]) zWerte[m.knoten[n].z] = true; });
+    zeile(unbekannt.length === 0, unbekannt.length === 0
+      ? 'Alle ' + lk.length + ' Lagerknoten existieren, Z-Werte der Lagerknoten: ' + Object.keys(zWerte).map(function (z) { return zahl(+z, 2) + ' m'; }).join(', ') + '.'
+      : 'Lagerknoten ohne Koordinaten: ' + unbekannt.join(', '));
+
+    var zs = {}; Object.keys(m.knoten).forEach(function (k) { zs[m.knoten[k].z] = (zs[m.knoten[k].z] || 0) + 1; });
+    zeile(true, 'Ebenen (Z [m], Anzahl Knoten): ' + Object.keys(zs).map(Number).sort(function (a, b) { return b - a; })
+      .map(function (z) { return zahl(z, 2) + ' (' + zs[z] + ')'; }).join(' · ') + '. Z zeigt nach unten, negative Werte liegen oben.');
+    return p.join('');
+  }
+
+  // ---------- Start ----------
+  function lade() {
     fetch(DATEI)
-      .then(function (antwort) {
-        if (!antwort.ok) throw new Error(DATEI + ' nicht gefunden (' + antwort.status + ')');
-        return antwort.arrayBuffer();
+      .then(function (r) {
+        if (!r.ok) throw new Error(DATEI + ' nicht gefunden (HTTP ' + r.status + ')');
+        return r.arrayBuffer();
       })
       .then(function (puffer) {
         var mappe = XLSX.read(puffer, { type: 'array' });
-        var blatt = mappe.Sheets[mappe.SheetNames[0]];
-        var zeilen = XLSX.utils.sheet_to_json(blatt);
-        ausgabe.textContent = 'Hallo Esslingen: ' + zeilen.length + ' Zeilen';
+        var modell = baueModell(mappe);
+        zeige(modell);
+        statusEl.innerHTML = '<span class="ok">✓</span> ' + esc(DATEINAME) + ' gelesen: ' +
+          Object.keys(modell.knoten).length + ' Knoten, ' + modell.staebe.length + ' Stäbe.';
+        window.modell = modell;
       })
-      .catch(function (fehler) { zeigeFehler(fehler.message); });
+      .catch(function (f) {
+        statusEl.innerHTML = '<span class="err">Fehler: ' + esc(f.message) + '</span>';
+      });
   }
 
   var skript = document.createElement('script');
   skript.src = SHEETJS;
-  skript.onload = ladeExcel;
-  skript.onerror = function () { zeigeFehler('SheetJS konnte nicht geladen werden'); };
+  skript.onload = lade;
+  skript.onerror = function () { statusEl.innerHTML = '<span class="err">Fehler: SheetJS konnte nicht geladen werden.</span>'; };
   document.head.appendChild(skript);
 </script>
 </body>
